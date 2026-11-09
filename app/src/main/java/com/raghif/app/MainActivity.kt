@@ -153,6 +153,7 @@ class MainActivity : ComponentActivity() {
     if(confirmExit) AlertDialog(onDismissRequest={confirmExit=false},title={Text("تأكيد الخروج")},text={Text("هل تريد الخروج من التطبيق؟")},confirmButton={TextButton(onClick={confirmExit=false;(context as? ComponentActivity)?.finish()}){Text("خروج")}},dismissButton={TextButton(onClick={confirmExit=false}){Text("إلغاء")}})
     if(message!=null) AlertDialog(onDismissRequest={message=null}, confirmButton={TextButton(onClick={message=null}){Text("موافق")} }, title={Text("رغيف")}, text={Text(message.orEmpty())})
 }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable private fun TopAppBarRaghif(title:String,onBack:()->Unit) {
@@ -340,5 +341,4 @@ private fun shareDailyRecord(activity:ComponentActivity,bakery:Bakery,record:Dai
         Card(Modifier.fillMaxWidth()) { Row(Modifier.fillMaxWidth().padding(16.dp),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) { Text("صوت النقر"); Switch(sound,{sound=it}) } }
         Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp)) { Text("رغيف — الإصدار 1.0.0"); Text("حسابات بلا تعقيد",color=brown); Text("إعداد التطبيق عبدالعزيز سعيدان",color=Color.Gray) } }
     }
-}
 }
