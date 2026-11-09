@@ -61,7 +61,6 @@ class MainActivity : ComponentActivity() {
     var selected by remember { mutableStateOf<Bakery?>(null) }
     var page by remember { mutableStateOf("bakeries") }
     var confirmExit by remember { mutableStateOf(false) }
-    var nightMode by remember { mutableStateOf(context.getSharedPreferences("raghif_settings", android.content.Context.MODE_PRIVATE).getBoolean("night_mode", false)) }
     var message by remember { mutableStateOf<String?>(null) }
     var editingBakery by remember { mutableStateOf<Bakery?>(null) }
     var currentRecord by remember { mutableStateOf<DailyRecord?>(null) }
@@ -72,7 +71,7 @@ class MainActivity : ComponentActivity() {
         else page = when(page) { "daily","settings" -> "bakeries"; "stats","financial" -> "daily"; "bakeryForm" -> "bakeries"; else -> "bakeries" }
     }
     Scaffold(containerColor=MaterialTheme.colorScheme.background, topBar={
-        TopAppBarRaghif(title=when(page) { "bakeries"->"قائمة المخابز"; "bakeryForm"->if(editingBakery==null) "إنشاء مخبز جديد" else "تعديل المخبز"; "daily"->selected?.name ?: "البيانات اليومية"; "stats"->"الإحصاءات"; "financial"->"التقرير المالي"; "settings"->"الإعدادات"; else->"رغيف" }, onBack={ page=when(page){"bakeries"->"welcome";"daily","settings"->"bakeries";"stats","financial"->"daily";"bakeryForm"->"bakeries";else->"welcome"} })
+        TopAppBarRaghif(title=when(page) { "bakeries"->"قائمة المخابز"; "bakeryForm"->if(editingBakery==null) "إنشاء مخبز جديد" else "تعديل المخبز"; "daily"->selected?.name ?: "البيانات اليومية"; "stats"->"الإحصاءات"; "financial"->"التقرير المالي"; "settings"->"الإعدادات"; else->"رغيف" }, onBack={ if(page=="bakeries") confirmExit=true else page=when(page){"daily","settings"->"bakeries";"stats","financial"->"daily";"bakeryForm"->"bakeries";else->"bakeries"} })
     }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement=Arrangement.spacedBy(12.dp)) {
             when(page) {
@@ -130,7 +129,7 @@ class MainActivity : ComponentActivity() {
                 }
                 "stats" -> selected?.let { StatsScreen(db,it) }
                 "financial" -> selected?.let { FinancialScreen(db,it) }
-                "settings" -> SettingsScreen()
+                "settings" -> SettingsScreen(nightMode=nightMode,onNightModeChange={ enabled -> nightMode=enabled; context.getSharedPreferences("raghif_settings", android.content.Context.MODE_PRIVATE).edit().putBoolean("night_mode",enabled).apply() })
             }
         }
     }
@@ -140,7 +139,7 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable private fun TopAppBarRaghif(title:String,onBack:()->Unit) {
-    TopAppBar(title={Text(title,fontWeight=FontWeight.Bold)}, navigationIcon={ IconButton(onClick=onBack){Icon(Icons.Default.ArrowBack,null)} }, colors=TopAppBarDefaults.topAppBarColors(containerColor=cream))
+    TopAppBar(title={Text(title,fontWeight=FontWeight.Bold)}, navigationIcon={ IconButton(onClick=onBack){Icon(Icons.Default.ArrowBack,null)} }, colors=TopAppBarDefaults.topAppBarColors(containerColor=MaterialTheme.colorScheme.surface))
 }
 @Composable private fun BigButton(label:String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick:()->Unit) { Button(onClick=onClick, modifier=Modifier.fillMaxWidth().height(58.dp), shape=RoundedCornerShape(16.dp)) { Icon(icon,null); Spacer(Modifier.width(8.dp)); Text(label,fontSize=17.sp) } }
 @Composable private fun EmptyMessage(text:String) { Card(Modifier.fillMaxWidth()) { Text(text,Modifier.padding(16.dp),color=Color.Gray) } }
@@ -295,12 +294,11 @@ class MainActivity : ComponentActivity() {
         Text(value,fontWeight=if(bold) FontWeight.Bold else FontWeight.Normal,fontSize=12.sp)
     }
 }
-@Composable private fun SettingsScreen() {
-    var night by remember { mutableStateOf(false) }; var sound by remember { mutableStateOf(true) }; var biometric by remember { mutableStateOf(false) }
-    Column(verticalArrangement=Arrangement.spacedBy(10.dp)) {
-        Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("الوضع الليلي");Switch(night,{night=it})} }
-        Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("صوت النقر");Switch(sound,{sound=it})} }
-        Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("الدخول بالبصمة (واجهة إعداد أولية)");Switch(biometric,{biometric=it})} }
-        Text("رغيف — الإصدار 1.0.0\nحسابات بلا تعقيد",color=Color.Gray)
+@Composable private fun SettingsScreen(nightMode:Boolean,onNightModeChange:(Boolean)->Unit) {
+    var sound by remember { mutableStateOf(true) }
+    Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
+        Card(Modifier.fillMaxWidth()) { Row(Modifier.fillMaxWidth().padding(16.dp),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) { Text("الوضع الليلي"); Switch(checked=nightMode,onCheckedChange=onNightModeChange) } }
+        Card(Modifier.fillMaxWidth()) { Row(Modifier.fillMaxWidth().padding(16.dp),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) { Text("صوت النقر"); Switch(sound,{sound=it}) } }
+        Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp)) { Text("رغيف — الإصدار 1.0.0"); Text("حسابات بلا تعقيد",color=brown); Text("إعداد التطبيق عبدالعزيز سعيدان",color=Color.Gray) } }
     }
 }
