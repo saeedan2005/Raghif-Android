@@ -265,6 +265,8 @@ class MainActivity : ComponentActivity() {
         DateField("من تاريخ",from,{from=it})
         DateField("إلى تاريخ",to,{to=it})
         Button(onClick={
+            rows=null
+            err=null
             val a=runCatching{LocalDate.parse(from)}.getOrNull()
             val z=runCatching{LocalDate.parse(to)}.getOrNull()
             when {
