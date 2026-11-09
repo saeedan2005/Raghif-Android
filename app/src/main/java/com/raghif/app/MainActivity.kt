@@ -322,7 +322,7 @@ private fun shareDailyRecord(activity:ComponentActivity,bakery:Bakery,record:Dai
     val doc=PdfDocument()
     val page=doc.startPage(PdfDocument.PageInfo.Builder(595,842,1).create())
     val paint=TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color=android.graphics.Color.BLACK; textSize=16f; typeface=Typeface.create("sans-serif",Typeface.NORMAL) }
-    val content=listOf("رغيف — تقرير السجل اليومي","المخبز: ${bakery.name}","التاريخ: ${prettyDate(record.date)}","اليوم: ${dayName(record.date)}","الملاحظة: ${record.note.ifBlank { "لا توجد" }}","كمية الدقيق: ${fmt(record.flourKg)} كجم","عدد الأقراص: ${fmt(record.pieces)}","عشاء العمال: ${fmt(record.workersMeal)}","التالف: ${fmt(record.waste)}","المباع آجل: ${fmt(record.creditSold)}","الإيراد: ${fmt(record.revenue)} ريال","المباع نقدًا: ${fmt(cashSold(record))}","الفرق: ${fmt(difference(record))} حبة").joinToString("\\n\\n")
+    val content=listOf("رغيف — تقرير السجل اليومي","المخبز: ${bakery.name}","التاريخ: ${prettyDate(record.date)}","اليوم: ${dayName(record.date)}","الملاحظة: ${record.note.ifBlank { "لا توجد" }}","كمية الدقيق: ${fmt(record.flourKg)} كجم","عدد الأقراص: ${fmt(record.pieces)}","عشاء العمال: ${fmt(record.workersMeal)}","التالف: ${fmt(record.waste)}","المباع آجل: ${fmt(record.creditSold)}","الإيراد: ${fmt(record.revenue)} ريال","المباع نقدًا: ${fmt(cashSold(record))}","الفرق: ${fmt(difference(record))} حبة").joinToString("\n\n")
     val layout=StaticLayout.Builder.obtain(content,0,content.length,paint,515).setAlignment(android.text.Layout.Alignment.ALIGN_NORMAL).setTextDirection(TextDirectionHeuristics.RTL).setIncludePad(true).build()
     page.canvas.save(); page.canvas.translate(40f,48f); layout.draw(page.canvas); page.canvas.restore()
     doc.finishPage(page)
@@ -340,4 +340,5 @@ private fun shareDailyRecord(activity:ComponentActivity,bakery:Bakery,record:Dai
         Card(Modifier.fillMaxWidth()) { Row(Modifier.fillMaxWidth().padding(16.dp),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) { Text("صوت النقر"); Switch(sound,{sound=it}) } }
         Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp)) { Text("رغيف — الإصدار 1.0.0"); Text("حسابات بلا تعقيد",color=brown); Text("إعداد التطبيق عبدالعزيز سعيدان",color=Color.Gray) } }
     }
+}
 }
