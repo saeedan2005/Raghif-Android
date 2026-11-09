@@ -41,8 +41,10 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
-private val brown = Color(0xFFA65B35)
-private val cream = Color(0xFFFFF8F1)
+private val brown = Color(0xFF87472F)
+private val cream = Color(0xFFFFF9F3)
+private val wheat = Color(0xFFE4B66E)
+private val ink = Color(0xFF35251E)
 private val ar = Locale("ar")
 private val dbFmt = DateTimeFormatter.ISO_LOCAL_DATE
 private val uiFmt = DateTimeFormatter.ofPattern("dd/MM/yyyy")
@@ -63,8 +65,8 @@ class MainActivity : ComponentActivity() {
     val context = LocalContext.current
     val db = remember { AppDatabase.get(context) }
     var nightMode by remember { mutableStateOf(context.getSharedPreferences("raghif_settings", android.content.Context.MODE_PRIVATE).getBoolean("night_mode", false)) }
-    val scheme = if (nightMode) darkColorScheme(primary=Color(0xFFE7B47A), background=Color(0xFF171411), surface=Color(0xFF241F1A), onSurface=Color(0xFFFFF4E8)) else lightColorScheme(primary=brown, background=cream, surface=Color.White, secondary=Color(0xFFD8A15D))
-    MaterialTheme(colorScheme=scheme) {
+    val scheme = if (nightMode) darkColorScheme(primary=Color(0xFFE7B47A), secondary=Color(0xFFD6A15D), background=Color(0xFF171411), surface=Color(0xFF241F1A), surfaceVariant=Color(0xFF342A22), onSurface=Color(0xFFFFF4E8)) else lightColorScheme(primary=brown, secondary=wheat, tertiary=Color(0xFF6F8060), background=cream, surface=Color.White, surfaceVariant=Color(0xFFF4E8DC), onSurface=ink)
+    MaterialTheme(colorScheme=scheme, shapes=Shapes(small=RoundedCornerShape(12.dp), medium=RoundedCornerShape(18.dp), large=RoundedCornerShape(24.dp))) {
     val scope = rememberCoroutineScope()
     val bakeries by db.bakeryDao().observeAll().collectAsState(initial=emptyList())
     var selected by remember { mutableStateOf<Bakery?>(null) }
@@ -145,7 +147,7 @@ class MainActivity : ComponentActivity() {
                     },message={message=it})
                 }
                 "stats" -> selected?.let { StatsScreen(db,it) }
-                "financial" -> selected?.let { FinancialScreen(db,it) }
+                "financial" -> selected?.let { b -> FinancialScreen(db,b,onExport={ rows,from,to -> (context as? ComponentActivity)?.let { activity -> shareFinancialReport(activity,b,rows,from,to) } }) }
                 "settings" -> SettingsScreen(nightMode=nightMode,onNightModeChange={ enabled -> nightMode=enabled; context.getSharedPreferences("raghif_settings", android.content.Context.MODE_PRIVATE).edit().putBoolean("night_mode",enabled).apply() })
             }
         }
@@ -252,7 +254,7 @@ class MainActivity : ComponentActivity() {
 }
 @Composable private fun Stat(label:String,value:String){Card(Modifier.fillMaxWidth()){Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text(label);Text(value,fontWeight=FontWeight.Bold,color=brown)}}}
 
-@Composable private fun FinancialScreen(db:AppDatabase,b:Bakery) {
+@Composable private fun FinancialScreen(db:AppDatabase,b:Bakery,onExport:(List<DailyRecord>,String,String)->Unit) {
     val scope= rememberCoroutineScope()
     var from by remember{mutableStateOf("")}
     var to by remember{mutableStateOf("")}
@@ -304,6 +306,8 @@ class MainActivity : ComponentActivity() {
                 }
             }
             Text("يحتوي التقرير على بندي الإيراد والمباع آجل فقط.",color=Color.Gray,fontSize=12.sp)
+            Spacer(Modifier.height(8.dp))
+            Button(onClick={onExport(list,from,to)},modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(16.dp)) { Icon(Icons.Default.PictureAsPdf,null); Spacer(Modifier.width(8.dp)); Text("تصدير التقرير المالي PDF") }
         }
     }
 }
@@ -319,21 +323,152 @@ class MainActivity : ComponentActivity() {
     OutlinedTextField(value=if(value.isBlank()) "" else prettyDate(value),onValueChange={},readOnly=true,label={Text(label)},placeholder={Text("اختر التاريخ")},modifier=Modifier.fillMaxWidth(),
         trailingIcon={ IconButton(onClick={ DatePickerDialog(context,{_,year,month,day -> onValue(LocalDate.of(year,month+1,day).format(dbFmt)) },selected.year,selected.monthValue-1,selected.dayOfMonth).apply { datePicker.maxDate=System.currentTimeMillis() }.show() }) { Icon(Icons.Default.CalendarMonth,contentDescription="اختيار التاريخ") } })
 }
-private fun shareDailyRecord(activity:ComponentActivity,bakery:Bakery,record:DailyRecord) {
-    val doc=PdfDocument()
-    val page=doc.startPage(PdfDocument.PageInfo.Builder(595,842,1).create())
-    val paint=TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color=android.graphics.Color.BLACK; textSize=16f; typeface=Typeface.create("sans-serif",Typeface.NORMAL) }
-    val content=listOf("رغيف — تقرير السجل اليومي","المخبز: ${bakery.name}","التاريخ: ${prettyDate(record.date)}","اليوم: ${dayName(record.date)}","الملاحظة: ${record.note.ifBlank { "لا توجد" }}","كمية الدقيق: ${fmt(record.flourKg)} كجم","عدد الأقراص: ${fmt(record.pieces)}","عشاء العمال: ${fmt(record.workersMeal)}","التالف: ${fmt(record.waste)}","المباع آجل: ${fmt(record.creditSold)}","الإيراد: ${fmt(record.revenue)} ريال","المباع نقدًا: ${fmt(cashSold(record))}","الفرق: ${fmt(difference(record))} حبة").joinToString("\n\n")
-    val layout=StaticLayout.Builder.obtain(content,0,content.length,paint,515).setAlignment(android.text.Layout.Alignment.ALIGN_NORMAL).setTextDirection(TextDirectionHeuristics.RTL).setIncludePad(true).build()
-    page.canvas.save(); page.canvas.translate(40f,48f); layout.draw(page.canvas); page.canvas.restore()
-    doc.finishPage(page)
-    val dir=File(activity.cacheDir,"shared_reports").apply { mkdirs() }
-    val pdf=File(dir,"raghif_${record.date}.pdf")
-    pdf.outputStream().use { doc.writeTo(it) }; doc.close()
-    val uri=FileProvider.getUriForFile(activity,"${activity.packageName}.fileprovider",pdf)
-    val intent=Intent(Intent.ACTION_SEND).apply { type="application/pdf"; putExtra(Intent.EXTRA_STREAM,uri); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION); clipData=android.content.ClipData.newUri(activity.contentResolver,"تقرير رغيف",uri) }
-    activity.startActivity(Intent.createChooser(intent,"مشاركة تقرير PDF"))
+private fun drawRtlPdfText(canvas: android.graphics.Canvas, text: String, x: Float, y: Float, width: Int, paint: TextPaint): Int {
+    if (text.isBlank()) return 0
+    val layout = StaticLayout.Builder.obtain(text, 0, text.length, paint, width)
+        .setAlignment(android.text.Layout.Alignment.ALIGN_NORMAL)
+        .setTextDirection(TextDirectionHeuristics.RTL)
+        .setIncludePad(false)
+        .build()
+    canvas.save()
+    canvas.translate(x, y)
+    layout.draw(canvas)
+    canvas.restore()
+    return layout.height
 }
+
+private fun createRaghifPdf(
+    activity: ComponentActivity,
+    bakery: Bakery,
+    title: String,
+    subtitle: String,
+    rows: List<Pair<String, String>>,
+    fileName: String
+) {
+    val document = PdfDocument()
+    val pageWidth = 595
+    val pageHeight = 842
+    val margin = 38f
+    val contentWidth = (pageWidth - margin * 2).toInt()
+    val titlePaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.rgb(105, 53, 34)
+        textSize = 22f
+        typeface = Typeface.create("sans-serif", Typeface.BOLD)
+    }
+    val bakeryPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.rgb(52, 37, 30)
+        textSize = 18f
+        typeface = Typeface.create("sans-serif", Typeface.BOLD)
+    }
+    val normalPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.rgb(55, 48, 43)
+        textSize = 12.5f
+        typeface = Typeface.create("sans-serif", Typeface.NORMAL)
+    }
+    val labelPaint = TextPaint(normalPaint).apply { typeface = Typeface.create("sans-serif", Typeface.BOLD) }
+    val footerPaint = TextPaint(normalPaint).apply {
+        color = android.graphics.Color.rgb(120, 105, 94)
+        textSize = 9.5f
+    }
+    val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    var pageNumber = 0
+    var page: PdfDocument.Page? = null
+    var y = 0f
+
+    fun startNewPage() {
+        page?.let { document.finishPage(it) }
+        pageNumber++
+        page = document.startPage(PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber).create())
+        val canvas = page!!.canvas
+        canvas.drawColor(android.graphics.Color.WHITE)
+        fillPaint.color = android.graphics.Color.rgb(135, 71, 47)
+        canvas.drawRoundRect(margin, 28f, pageWidth - margin, 34f, 3f, 3f, fillPaint)
+        y = 52f
+        y += drawRtlPdfText(canvas, "رغيف", margin, y, contentWidth, titlePaint) + 5f
+        y += drawRtlPdfText(canvas, bakery.name, margin, y, contentWidth, bakeryPaint) + 4f
+        y += drawRtlPdfText(canvas, title, margin, y, contentWidth, titlePaint) + 3f
+        y += drawRtlPdfText(canvas, subtitle, margin, y, contentWidth, normalPaint) + 15f
+        fillPaint.color = android.graphics.Color.rgb(246, 237, 226)
+        canvas.drawRoundRect(margin, y, pageWidth - margin, y + 25f, 6f, 6f, fillPaint)
+        drawRtlPdfText(canvas, "البيان", margin + 10f, y + 6f, 245, labelPaint)
+        drawRtlPdfText(canvas, "القيمة", pageWidth - margin - 205f, y + 6f, 185, labelPaint)
+        y += 32f
+    }
+
+    startNewPage()
+    rows.forEachIndexed { index, row ->
+        val canvas = page!!.canvas
+        val labelLayout = StaticLayout.Builder.obtain(row.first, 0, row.first.length, normalPaint, 245)
+            .setAlignment(android.text.Layout.Alignment.ALIGN_NORMAL).setTextDirection(TextDirectionHeuristics.RTL).setIncludePad(false).build()
+        val valueLayout = StaticLayout.Builder.obtain(row.second, 0, row.second.length, normalPaint, 185)
+            .setAlignment(android.text.Layout.Alignment.ALIGN_NORMAL).setTextDirection(TextDirectionHeuristics.RTL).setIncludePad(false).setMaxLines(4).build()
+        val rowHeight = maxOf(30, maxOf(labelLayout.height, valueLayout.height) + 12).toFloat()
+        if (y + rowHeight > pageHeight - 58f) startNewPage()
+        val target = page!!.canvas
+        if (index % 2 == 0) {
+            fillPaint.color = android.graphics.Color.rgb(252, 249, 245)
+            target.drawRect(margin, y, pageWidth - margin, y + rowHeight, fillPaint)
+        }
+        drawRtlPdfText(target, row.first, margin + 10f, y + 6f, 245, normalPaint)
+        drawRtlPdfText(target, row.second, pageWidth - margin - 205f, y + 6f, 185, normalPaint)
+        fillPaint.color = android.graphics.Color.rgb(230, 220, 210)
+        fillPaint.strokeWidth = 0.6f
+        target.drawLine(margin, y + rowHeight, pageWidth - margin, y + rowHeight, fillPaint)
+        y += rowHeight
+    }
+    val canvas = page!!.canvas
+    fillPaint.color = android.graphics.Color.rgb(135, 71, 47)
+    canvas.drawLine(margin, pageHeight - 42f, pageWidth - margin, pageHeight - 42f, fillPaint)
+    drawRtlPdfText(canvas, "إعداد التطبيق عبدالعزيز سعيدان", margin, pageHeight - 34f, contentWidth / 2, footerPaint)
+    val pageLabel = "صفحة $pageNumber"
+    val pageLayout = StaticLayout.Builder.obtain(pageLabel, 0, pageLabel.length, footerPaint, 130)
+        .setAlignment(android.text.Layout.Alignment.ALIGN_NORMAL).setTextDirection(TextDirectionHeuristics.RTL).setIncludePad(false).build()
+    canvas.save(); canvas.translate(pageWidth - margin - 130f, pageHeight - 34f); pageLayout.draw(canvas); canvas.restore()
+    document.finishPage(page!!)
+    val directory = File(activity.cacheDir, "shared_reports").apply { mkdirs() }
+    val pdf = File(directory, fileName)
+    pdf.outputStream().use { document.writeTo(it) }
+    document.close()
+    val uri = FileProvider.getUriForFile(activity, "${activity.packageName}.fileprovider", pdf)
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "application/pdf"
+        putExtra(Intent.EXTRA_STREAM, uri)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        clipData = android.content.ClipData.newUri(activity.contentResolver, "تقرير رغيف", uri)
+    }
+    activity.startActivity(Intent.createChooser(intent, "مشاركة تقرير PDF"))
+}
+
+private fun shareDailyRecord(activity: ComponentActivity, bakery: Bakery, record: DailyRecord) {
+    val rows = listOf(
+        "التاريخ" to prettyDate(record.date),
+        "اليوم" to dayName(record.date),
+        "الملاحظة" to record.note.ifBlank { "لا توجد" },
+        "كمية الدقيق" to "${fmt(record.flourKg)} كجم",
+        "عدد الأقراص" to fmt(record.pieces),
+        "عشاء العمال" to fmt(record.workersMeal),
+        "التالف" to fmt(record.waste),
+        "المباع آجل" to fmt(record.creditSold),
+        "الإيراد" to "${fmt(record.revenue)} ريال",
+        "المباع نقدًا" to "${fmt(cashSold(record))} حبة",
+        "الفرق" to "${fmt(difference(record))} حبة",
+        "متوسط إنتاج الكيس" to "${avgBag(record)?.let { fmt(it) } ?: "غير متاح"} حبة/كيس"
+    )
+    createRaghifPdf(activity, bakery, "تقرير السجل اليومي", "تاريخ السجل: ${prettyDate(record.date)}", rows, "raghif_daily_${record.date}.pdf")
+}
+
+private fun shareFinancialReport(activity: ComponentActivity, bakery: Bakery, records: List<DailyRecord>, from: String, to: String) {
+    val rows = mutableListOf<Pair<String, String>>()
+    rows += "الفترة" to "${prettyDate(from)} إلى ${prettyDate(to)}"
+    records.sortedBy { it.date }.forEach { record ->
+        rows += "الإيراد — ${prettyDate(record.date)}" to "${fmt(record.revenue)} ريال"
+        rows += "المباع آجل — ${prettyDate(record.date)}" to fmt(record.creditSold)
+    }
+    rows += "إجمالي الإيراد" to "${fmt(records.sumOf { it.revenue })} ريال"
+    rows += "إجمالي المباع آجل" to fmt(records.sumOf { it.creditSold })
+    createRaghifPdf(activity, bakery, "التقرير المالي", "الفترة المحددة: ${prettyDate(from)} — ${prettyDate(to)}", rows, "raghif_financial_${from}_${to}.pdf")
+}
+
 @Composable private fun SettingsScreen(nightMode:Boolean,onNightModeChange:(Boolean)->Unit) {
     var sound by remember { mutableStateOf(true) }
     Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
