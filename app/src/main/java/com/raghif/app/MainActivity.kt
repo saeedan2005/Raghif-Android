@@ -100,16 +100,25 @@ class MainActivity : ComponentActivity() {
                     Text("تعمل البيانات محليًا على هذا الجهاز", modifier=Modifier.align(Alignment.CenterHorizontally), color=Color.Gray)
                 }
                 "bakeries" -> {
+                    Card(Modifier.fillMaxWidth(),shape=RoundedCornerShape(22.dp),colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.surface)) {
+                        Row(Modifier.fillMaxWidth().padding(16.dp),verticalAlignment=Alignment.CenterVertically) {
+                            Box(Modifier.size(54.dp).background(Color(0xFFFFE7C5),RoundedCornerShape(16.dp)),contentAlignment=Alignment.Center) { Icon(Icons.Default.BakeryDining,null,tint=brown,modifier=Modifier.size(34.dp)) }
+                            Spacer(Modifier.width(12.dp))
+                            Column(Modifier.weight(1f)) { Text("مخابزك",fontSize=21.sp,fontWeight=FontWeight.Bold); Text("${bakeries.size} مخبز مسجل",color=Color.Gray,fontSize=13.sp) }
+                        }
+                    }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement=Arrangement.spacedBy(8.dp)) {
                         Button(onClick={editingBakery=null;page="bakeryForm"}, modifier=Modifier.weight(1f)) { Icon(Icons.Default.Add,null); Text("مخبز جديد") }
                         OutlinedButton(onClick={page="settings"}) { Icon(Icons.Default.Settings,null); Text("الإعدادات") }
                     }
                     if (bakeries.isEmpty()) EmptyMessage("لا توجد مخابز مضافة. أضف مخبزًا للبدء.")
-                    LazyColumn(verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                    LazyColumn(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(10.dp),contentPadding=PaddingValues(bottom=12.dp)) {
                         items(bakeries, key={it.id}) { b ->
-                            Card(Modifier.fillMaxWidth().clickable { selected=b; currentRecord=null; page="daily" }, shape=RoundedCornerShape(18.dp)) {
-                                Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment=Alignment.CenterVertically) {
-                                    Column(Modifier.weight(1f)) { Text(b.name, fontWeight=FontWeight.Bold, fontSize=18.sp); Text("رقم المخبز: ${b.number}", color=Color.Gray); Text("إعدادات البيع: ${fmt(b.unitRevenue)} ريال / ${fmt(b.piecesPerBag)} حبات", fontSize=12.sp) }
+                            Card(Modifier.fillMaxWidth().clickable { selected=b; currentRecord=null; page="daily" },shape=RoundedCornerShape(20.dp),elevation=CardDefaults.cardElevation(2.dp)) {
+                                Row(Modifier.fillMaxWidth().padding(16.dp),verticalAlignment=Alignment.CenterVertically) {
+                                    Box(Modifier.size(48.dp).background(Color(0xFFFFE7C5),RoundedCornerShape(14.dp)),contentAlignment=Alignment.Center) { Icon(Icons.Default.Storefront,null,tint=brown,modifier=Modifier.size(27.dp)) }
+                                    Spacer(Modifier.width(12.dp))
+                                    Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(3.dp)) { Text(b.name,fontWeight=FontWeight.Bold,fontSize=17.sp); Text("رقم المخبز: ${b.number}",color=Color.Gray,fontSize=12.sp); Text("${fmt(b.unitRevenue)} ريال / ${fmt(b.piecesPerBag)} حبات",fontSize=12.sp,color=brown) }
                                     IconButton(onClick={editingBakery=b;page="bakeryForm"}) { Icon(Icons.Default.Edit,null) }
                                     IconButton(onClick={scope.launch { if(db.dailyDao().all(b.id).isNotEmpty()) message="لا يمكن حذف مخبز يحتوي على سجلات يومية في هذه النسخة التجريبية." else { db.bakeryDao().delete(b); message="تم حذف المخبز." } }}) { Icon(Icons.Default.Delete,null,tint=Color.Red) }
                                 }
