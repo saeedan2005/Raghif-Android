@@ -2,7 +2,7 @@ name: Build Raghif Android APK
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "fix/final-ui-navigation-pdf-nightmode" ]
   workflow_dispatch:
 
 permissions:
