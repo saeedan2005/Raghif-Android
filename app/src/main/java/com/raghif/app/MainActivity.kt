@@ -1,6 +1,15 @@
 package com.raghif.app
 
 import android.content.Intent
+import android.app.DatePickerDialog
+import android.graphics.pdf.PdfDocument
+import android.graphics.Paint
+import android.graphics.Typeface
+import android.text.StaticLayout
+import android.text.TextPaint
+import android.text.TextDirectionHeuristics
+import androidx.core.content.FileProvider
+import java.io.File
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -122,9 +131,8 @@ class MainActivity : ComponentActivity() {
                 })
                 "daily" -> selected?.let { b ->
                     DailyScreen(db,b,currentRecord,onChoose={currentRecord=it},onNew={currentRecord=null},onSaved={currentRecord=it;message="تم حفظ السجل اليومي.";},onStats={page="stats"},onFinancial={page="financial"},onShare={record ->
-                        val share = "رغيف | ${b.name}\nالتاريخ: ${prettyDate(record.date)}\nاليوم: ${dayName(record.date)}\nالملاحظة: ${record.note}\nكمية الدقيق: ${fmt(record.flourKg)} كجم\nعدد الأقراص: ${fmt(record.pieces)}\nعشاء العمال: ${fmt(record.workersMeal)}\nالتالف: ${fmt(record.waste)}\nالمباع آجل: ${fmt(record.creditSold)}\nالإيراد: ${fmt(record.revenue)} ريال\nالمباع نقدًا: ${fmt(cashSold(record))}\nالفرق: ${fmt(difference(record))}"
-                        val intent=Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT,share)
-                        context.startActivity(Intent.createChooser(intent,"مشاركة السجل"))
+                        val activity=context as? ComponentActivity ?: return@DailyScreen
+                        shareDailyRecord(activity,b,record)
                     },message={message=it})
                 }
                 "stats" -> selected?.let { StatsScreen(db,it) }
@@ -219,7 +227,7 @@ class MainActivity : ComponentActivity() {
 @Composable private fun StatsScreen(db:AppDatabase,b:Bakery) {
     val scope= rememberCoroutineScope(); var from by remember{mutableStateOf("")};var to by remember{mutableStateOf("")};var rows by remember{mutableStateOf<List<DailyRecord>?>(null)};var err by remember{mutableStateOf<String?>(null)}
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-        Field("من تاريخ (YYYY-MM-DD)",from,{from=it});Field("إلى تاريخ (YYYY-MM-DD)",to,{to=it})
+        DateField("من تاريخ",from,{from=it});DateField("إلى تاريخ",to,{to=it})
         Button(onClick={val a=runCatching{LocalDate.parse(from)}.getOrNull();val z=runCatching{LocalDate.parse(to)}.getOrNull();if(a==null||z==null||a.isAfter(z)||z.isAfter(LocalDate.now()))err="تحقق من فترة التاريخ." else scope.launch{rows=db.dailyDao().between(b.id,from,to);err=if(rows!!.isEmpty())"لا توجد سجلات في الفترة المحددة." else null}},modifier=Modifier.fillMaxWidth()){Text("بحث")}
         err?.let{Text(it,color=MaterialTheme.colorScheme.error)}
         rows?.takeIf{it.isNotEmpty()}?.let{list->
@@ -242,8 +250,8 @@ class MainActivity : ComponentActivity() {
     var err by remember{mutableStateOf<String?>(null)}
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
         Text("التقرير المالي — ${b.name}",fontWeight=FontWeight.Bold,color=brown,fontSize=18.sp)
-        Field("من تاريخ (YYYY-MM-DD)",from,{from=it})
-        Field("إلى تاريخ (YYYY-MM-DD)",to,{to=it})
+        DateField("من تاريخ",from,{from=it})
+        DateField("إلى تاريخ",to,{to=it})
         Button(onClick={
             val a=runCatching{LocalDate.parse(from)}.getOrNull()
             val z=runCatching{LocalDate.parse(to)}.getOrNull()
@@ -293,6 +301,28 @@ class MainActivity : ComponentActivity() {
     Box(Modifier.width(width).border(1.dp,Color(0xFFD9C8B9)).background(if(bold) Color(0xFFFFE8D3) else Color.White).padding(8.dp),contentAlignment=Alignment.Center) {
         Text(value,fontWeight=if(bold) FontWeight.Bold else FontWeight.Normal,fontSize=12.sp)
     }
+}
+
+@Composable private fun DateField(label:String,value:String,onValue:(String)->Unit) {
+    val context=LocalContext.current
+    val selected=runCatching { LocalDate.parse(value) }.getOrElse { LocalDate.now() }
+    OutlinedTextField(value=if(value.isBlank()) "" else prettyDate(value),onValueChange={},readOnly=true,label={Text(label)},placeholder={Text("اختر التاريخ")},modifier=Modifier.fillMaxWidth(),
+        trailingIcon={ IconButton(onClick={ DatePickerDialog(context,{_,year,month,day -> onValue(LocalDate.of(year,month+1,day).format(dbFmt)) },selected.year,selected.monthValue-1,selected.dayOfMonth).apply { datePicker.maxDate=System.currentTimeMillis() }.show() }) { Icon(Icons.Default.CalendarMonth,contentDescription="اختيار التاريخ") } })
+}
+private fun shareDailyRecord(activity:ComponentActivity,bakery:Bakery,record:DailyRecord) {
+    val doc=PdfDocument()
+    val page=doc.startPage(PdfDocument.PageInfo.Builder(595,842,1).create())
+    val paint=TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color=android.graphics.Color.BLACK; textSize=16f; typeface=Typeface.create("sans-serif",Typeface.NORMAL) }
+    val content=listOf("رغيف — تقرير السجل اليومي","المخبز: ${bakery.name}","التاريخ: ${prettyDate(record.date)}","اليوم: ${dayName(record.date)}","الملاحظة: ${record.note.ifBlank { "لا توجد" }}","كمية الدقيق: ${fmt(record.flourKg)} كجم","عدد الأقراص: ${fmt(record.pieces)}","عشاء العمال: ${fmt(record.workersMeal)}","التالف: ${fmt(record.waste)}","المباع آجل: ${fmt(record.creditSold)}","الإيراد: ${fmt(record.revenue)} ريال","المباع نقدًا: ${fmt(cashSold(record))}","الفرق: ${fmt(difference(record))} حبة").joinToString("\\n\\n")
+    val layout=StaticLayout.Builder.obtain(content,0,content.length,paint,515).setAlignment(android.text.Layout.Alignment.ALIGN_NORMAL).setTextDirection(TextDirectionHeuristics.RTL).setIncludePad(true).build()
+    page.canvas.save(); page.canvas.translate(40f,48f); layout.draw(page.canvas); page.canvas.restore()
+    doc.finishPage(page)
+    val dir=File(activity.cacheDir,"shared_reports").apply { mkdirs() }
+    val pdf=File(dir,"raghif_${record.date}.pdf")
+    pdf.outputStream().use { doc.writeTo(it) }; doc.close()
+    val uri=FileProvider.getUriForFile(activity,"${activity.packageName}.fileprovider",pdf)
+    val intent=Intent(Intent.ACTION_SEND).apply { type="application/pdf"; putExtra(Intent.EXTRA_STREAM,uri); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION); clipData=android.content.ClipData.newUri(activity.contentResolver,"تقرير رغيف",uri) }
+    activity.startActivity(Intent.createChooser(intent,"مشاركة تقرير PDF"))
 }
 @Composable private fun SettingsScreen(nightMode:Boolean,onNightModeChange:(Boolean)->Unit) {
     var sound by remember { mutableStateOf(true) }
