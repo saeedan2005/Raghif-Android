@@ -390,8 +390,8 @@ private fun createRaghifPdf(
         y += drawRtlPdfText(canvas, subtitle, margin, y, contentWidth, normalPaint) + 15f
         fillPaint.color = android.graphics.Color.rgb(246, 237, 226)
         canvas.drawRoundRect(margin, y, pageWidth - margin, y + 25f, 6f, 6f, fillPaint)
-        drawRtlPdfText(canvas, "البيان", margin + 10f, y + 6f, 245, labelPaint)
-        drawRtlPdfText(canvas, "القيمة", pageWidth - margin - 205f, y + 6f, 185, labelPaint)
+        drawRtlPdfText(canvas, "البيان", pageWidth - margin - 255f, y + 6f, 245, labelPaint)
+        drawRtlPdfText(canvas, "القيمة", margin + 10f, y + 6f, 185, labelPaint)
         y += 32f
     }
 
@@ -409,8 +409,8 @@ private fun createRaghifPdf(
             fillPaint.color = android.graphics.Color.rgb(252, 249, 245)
             target.drawRect(margin, y, pageWidth - margin, y + rowHeight, fillPaint)
         }
-        drawRtlPdfText(target, row.first, margin + 10f, y + 6f, 245, normalPaint)
-        drawRtlPdfText(target, row.second, pageWidth - margin - 205f, y + 6f, 185, normalPaint)
+        drawRtlPdfText(target, row.first, pageWidth - margin - 255f, y + 6f, 245, normalPaint)
+        drawRtlPdfText(target, row.second, margin + 10f, y + 6f, 185, normalPaint)
         fillPaint.color = android.graphics.Color.rgb(230, 220, 210)
         fillPaint.strokeWidth = 0.6f
         target.drawLine(margin, y + rowHeight, pageWidth - margin, y + rowHeight, fillPaint)
