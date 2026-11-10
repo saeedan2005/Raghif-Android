@@ -7,6 +7,11 @@ import android.view.MotionEvent
 import android.view.ViewConfiguration
 import androidx.activity.compose.BackHandler
 import com.raghif.app.ui.CalendarDateField
+import com.raghif.app.ui.RaghifBrandHeader
+import com.raghif.app.ui.BakeryDashboard
+import com.raghif.app.ui.ReportExportScreen
+import com.raghif.app.ui.RaghifPalette
+import androidx.compose.foundation.BorderStroke
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -143,7 +148,7 @@ class MainActivity : ComponentActivity() {
     var reportRows by remember { mutableStateOf<List<DailyRecord>>(emptyList()) }
 
     Scaffold(containerColor=MaterialTheme.colorScheme.background, topBar={
-        TopAppBarRaghif(title=when(page) { "welcome"->"رغيف"; "bakeries"->"قائمة المخابز"; "bakeryForm"->if(editingBakery==null) "إنشاء مخبز جديد" else "تعديل المخبز"; "daily"->selected?.name ?: "البيانات اليومية"; "stats"->"الإحصاءات"; "financial"->"التقرير المالي"; "search"->"البحث في السجلات"; "settings"->"الإعدادات"; else->"رغيف" }, onBack={ navigateBack() })
+        TopAppBarRaghif(isRoot=page=="bakeries",title=when(page) { "welcome"->"رغيف"; "bakeries"->"قائمة المخابز"; "bakeryForm"->if(editingBakery==null) "إنشاء مخبز جديد" else "تعديل المخبز"; "dashboard"->selected?.name ?: "لوحة التحكم"; "daily"->"إدخال البيانات اليومية"; "export"->"تصدير تقارير PDF"; "stats"->"الإحصاءات"; "financial"->"التقرير المالي"; "search"->"البحث في السجلات"; "settings"->"الإعدادات"; else->"رغيف" }, onBack={ navigateBack() })
     }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement=Arrangement.spacedBy(12.dp)) {
             when(page) {
@@ -155,9 +160,9 @@ class MainActivity : ComponentActivity() {
                     if (bakeries.isEmpty()) EmptyMessage("لا توجد مخابز مضافة. أضف مخبزًا للبدء.")
                     LazyColumn(verticalArrangement=Arrangement.spacedBy(8.dp)) {
                         items(bakeries, key={it.id}) { b ->
-                            Card(Modifier.fillMaxWidth().clickable { selected=b; currentRecord=null; navigateTo("daily") }, shape=RoundedCornerShape(18.dp)) {
+                            Card(Modifier.fillMaxWidth().clickable { selected=b; currentRecord=null; navigateTo("dashboard") }, shape=RoundedCornerShape(18.dp),border=BorderStroke(1.dp,RaghifPalette.gold),elevation=CardDefaults.cardElevation(defaultElevation=4.dp),colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.surface)) {
                                 Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment=Alignment.CenterVertically) {
-                                    Column(Modifier.weight(1f)) { Text(b.name, fontWeight=FontWeight.Bold, fontSize=18.sp); Text("رقم المخبز: ${b.number}", color=Color.Gray); Text("إعدادات البيع: ${fmt(b.unitRevenue)} ريال / ${fmt(b.piecesPerBag)} حبات", fontSize=12.sp) }
+                                    Column(Modifier.weight(1f)) { Text(b.name, fontWeight=FontWeight.Bold, fontSize=18.sp); Text("رقم المخبز: ${b.number}", color=MaterialTheme.colorScheme.onSurface); if(b.address.isNotBlank()) Text(b.address,fontSize=12.sp); Text("إعدادات البيع: ${fmt(b.unitRevenue)} ريال / ${fmt(b.piecesPerBag)} حبات", fontSize=12.sp) }
                                     IconButton(onClick={editingBakery=b;navigateTo("bakeryForm")}) { Icon(Icons.Default.Edit,null) }
                                     IconButton(onClick={scope.launch { if(db.dailyDao().all(b.id).isNotEmpty()) message="لا يمكن حذف مخبز يحتوي على سجلات يومية في هذه النسخة التجريبية." else { db.bakeryDao().delete(b); message="تم حذف المخبز." } }}) { Icon(Icons.Default.Delete,null,tint=Color.Red) }
                                 }
@@ -177,6 +182,22 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 })
+                "dashboard" -> selected?.let { b ->
+                    val records by db.dailyDao().observe(b.id).collectAsState(initial=emptyList())
+                    BakeryDashboard(
+                        bakery=b,
+                        records=records,
+                        onDaily={currentRecord=null;navigateTo("daily")},
+                        onStats={navigateTo("stats")},
+                        onSearch={navigateTo("search")},
+                        onFinancial={navigateTo("financial")},
+                        onReports={navigateTo("export")}
+                    )
+                }
+                "export" -> selected?.let { b ->
+                    val records by db.dailyDao().observe(b.id).collectAsState(initial=emptyList())
+                    ReportExportScreen(b,records)
+                }
                 "daily" -> selected?.let { b ->
                     DailyScreen(db,b,currentRecord,onChoose={currentRecord=it},onNew={currentRecord=null},onSaved={currentRecord=it;message="تم حفظ السجل اليومي.";},onStats={navigateTo("stats")},onFinancial={navigateTo("financial")},onSearch={navigateTo("search")},message={message=it})
                 }
@@ -197,9 +218,8 @@ class MainActivity : ComponentActivity() {
     if(message!=null) AlertDialog(onDismissRequest={message=null}, confirmButton={TextButton(onClick={message=null}){Text("موافق")} }, title={Text("رغيف")}, text={Text(message.orEmpty())})
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable private fun TopAppBarRaghif(title:String,onBack:()->Unit) {
-    TopAppBar(title={Text(title,fontWeight=FontWeight.Bold)}, navigationIcon={ IconButton(onClick=onBack){Icon(Icons.Default.ArrowBack,null)} }, colors=TopAppBarDefaults.topAppBarColors(containerColor=MaterialTheme.colorScheme.background))
+@Composable private fun TopAppBarRaghif(title:String,isRoot:Boolean,onBack:()->Unit) {
+    RaghifBrandHeader(title=title,isRoot=isRoot,onBack=onBack)
 }
 @Composable private fun BigButton(label:String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick:()->Unit) { Button(onClick=onClick, modifier=Modifier.fillMaxWidth().height(58.dp), shape=RoundedCornerShape(16.dp)) { Icon(icon,null); Spacer(Modifier.width(8.dp)); Text(label,fontSize=17.sp) } }
 @Composable private fun EmptyMessage(text:String) { Card(Modifier.fillMaxWidth()) { Text(text,Modifier.padding(16.dp),color=Color.Gray) } }
