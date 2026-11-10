@@ -3,7 +3,13 @@ name: Build Raghif Android APK
 on:
   push:
     branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
   workflow_dispatch:
+
+concurrency:
+  group: raghif-apk-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read

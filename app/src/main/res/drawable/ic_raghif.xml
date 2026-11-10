@@ -1,8 +1,16 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp" android:height="108dp"
-    android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#FFF1DF" android:pathData="M0,0h108v108h-108z"/>
-    <path android:fillColor="#A65B35" android:pathData="M20,57 C20,37 34,24 54,24 C74,24 88,37 88,57 L88,70 C88,77 82,83 75,83 L33,83 C26,83 20,77 20,70 Z"/>
-    <path android:fillColor="#F7C77A" android:pathData="M28,57 C28,42 39,32 54,32 C69,32 80,42 80,57 L80,67 C80,72 76,76 71,76 L37,76 C32,76 28,72 28,67 Z"/>
-    <path android:fillColor="#A65B35" android:pathData="M43,40 L47,40 L42,55 L38,55 Z M57,37 L61,38 L57,54 L53,53 Z M69,43 L73,45 L68,58 L64,56 Z"/>
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Branding from approved references: deep baked-brown, amber loaf, and golden wheat. -->
+    <path android:fillColor="#552306" android:pathData="M12,0 L96,0 Q108,0 108,12 L108,96 Q108,108 96,108 L12,108 Q0,108 0,96 L0,12 Q0,0 12,0 Z"/>
+    <path android:fillColor="#A95500" android:pathData="M17,8 L91,8 Q100,8 100,17 L100,91 Q100,100 91,100 L17,100 Q8,100 8,91 L8,17 Q8,8 17,8 Z"/>
+    <path android:fillColor="#FFDC76" android:pathData="M22,65 C22,41 38,25 58,24 C77,23 90,37 91,56 C94,73 84,84 65,85 L38,85 C27,85 21,79 22,65 Z"/>
+    <path android:fillColor="#F99508" android:pathData="M26,65 C26,43 40,30 58,29 C73,29 84,41 86,57 C88,70 81,80 65,80 L39,80 C30,80 26,75 26,65 Z"/>
+    <path android:fillColor="#FFE5A5" android:pathData="M38,43 C39,40 42,37 45,35 C44,46 42,54 40,62 L35,59 Z M53,34 L59,32 C59,43 56,52 52,60 L47,57 Z M68,38 L74,42 C71,48 67,55 63,61 L59,57 Z"/>
+    <path android:strokeColor="#FFCF3C" android:strokeWidth="2.4" android:strokeLineCap="round" android:pathData="M27,87 Q17,69 19,28"/>
+    <path android:fillColor="#FDD159" android:pathData="M20,33 C11,27 11,19 13,13 C20,18 23,25 20,33 Z M20,45 C11,40 8,32 9,26 C18,30 22,38 20,45 Z M21,57 C12,55 8,47 7,41 C16,43 22,51 21,57 Z M23,68 C15,67 11,60 10,54 C19,56 24,62 23,68 Z"/>
+    <path android:fillColor="#FFE394" android:pathData="M20,30 C27,24 28,18 26,12 C20,18 17,24 20,30 Z M20,43 C28,36 30,28 28,23 C22,29 19,36 20,43 Z M20,54 C29,50 32,43 32,36 C25,41 21,48 20,54 Z"/>
+    <path android:strokeColor="#FFE8A9" android:strokeWidth="1.4" android:pathData="M23,90 L85,90"/>
 </vector>
