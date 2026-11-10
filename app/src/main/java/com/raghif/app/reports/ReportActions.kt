@@ -28,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.FileProvider
+import com.raghif.app.ui.LocalRaghifSound
 import java.io.File
 
 /**
@@ -41,6 +42,7 @@ fun ReportActions(
     createPdf: () -> ByteArray
 ) {
     val context = LocalContext.current
+    val clickSound = LocalRaghifSound.current
     var pending by remember { mutableStateOf<ByteArray?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
     val save = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
@@ -68,6 +70,7 @@ fun ReportActions(
     Column(verticalArrangement = Arrangement.spacedBy(androidx.compose.ui.unit.Dp(8f))) {
         Button(
             onClick = {
+                clickSound()
                 runCatching { createPdf() }.onSuccess {
                     pending = it
                     save.launch(fileName + ".pdf")
@@ -79,6 +82,7 @@ fun ReportActions(
 
         OutlinedButton(
             onClick = {
+                clickSound()
                 runCatching {
                     val file = makeFile()
                     val uri = FileProvider.getUriForFile(context, context.packageName + ".fileprovider", file)
