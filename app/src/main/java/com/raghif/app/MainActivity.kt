@@ -225,7 +225,17 @@ class MainActivity : ComponentActivity() {
 @Composable private fun EmptyMessage(text:String) { Card(Modifier.fillMaxWidth()) { Text(text,Modifier.padding(16.dp),color=Color.Gray) } }
 
 @Composable private fun Field(label:String,value:String,onValue:(String)->Unit, numeric:Boolean=false, singleLine:Boolean=true) {
-    OutlinedTextField(value=value,onValueChange=onValue,label={Text(label)},modifier=Modifier.fillMaxWidth(),singleLine=singleLine,keyboardOptions=KeyboardOptions(keyboardType=if(numeric) KeyboardType.Number else KeyboardType.Text))
+    OutlinedTextField(
+        value=value,onValueChange=onValue,label={Text(label)},
+        modifier=Modifier.fillMaxWidth(),singleLine=singleLine,
+        shape=RoundedCornerShape(16.dp),
+        colors=OutlinedTextFieldDefaults.colors(
+            focusedBorderColor=RaghifPalette.orange,
+            unfocusedBorderColor=RaghifPalette.gold,
+            focusedLabelColor=MaterialTheme.colorScheme.primary
+        ),
+        keyboardOptions=KeyboardOptions(keyboardType=if(numeric) KeyboardType.Number else KeyboardType.Text)
+    )
 }
 @Composable private fun BakeryForm(existing:Bakery?,onCancel:()->Unit,onSave:(Bakery)->Unit) {
     var number by remember(existing){mutableStateOf(existing?.number.orEmpty())}; var name by remember(existing){mutableStateOf(existing?.name.orEmpty())}
@@ -259,8 +269,8 @@ class MainActivity : ComponentActivity() {
     val f=normalizedDigits(flour).toLongOrNull()?:0; val p=normalizedDigits(pieces).toLongOrNull()?:0; val m=normalizedDigits(meal).toLongOrNull()?:0; val w=normalizedDigits(waste).toLongOrNull()?:0; val c=normalizedDigits(credit).toLongOrNull()?:0; val rev=normalizedDigits(revenue).toLongOrNull()?:0
     val preview=DailyRecord(id=initial?.id?:0,bakeryId=bakery.id,date=date,flourKg=f,pieces=p,workersMeal=m,waste=w,creditSold=c,revenue=rev,note=note,unitRevenueUsed=initial?.unitRevenueUsed?:bakery.unitRevenue,piecesPerBagUsed=initial?.piecesPerBagUsed?:bakery.piecesPerBag,flourBagWeightUsed=initial?.flourBagWeightUsed?:bakery.flourBagWeight)
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-        Text(bakery.name,Modifier.fillMaxWidth(),fontSize=23.sp,fontWeight=FontWeight.Bold,color=brown)
-        Text("حسابات يومية... بال تعقيد",color=Color.Gray)
+        com.raghif.app.ui.RaghifSectionHeading("بيانات السجل والتاريخ — " + bakery.name)
+        Text("أدخل الإنتاج والإيراد؛ يتم حساب الفرق ومتوسط الإنتاج تلقائيًا.",color=MaterialTheme.colorScheme.onSurface)
         Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick={scope.launch { history=db.dailyDao().all(bakery.id);showHistory=true }},modifier=Modifier.weight(1f)){Icon(Icons.Default.Search,null);Text("السجلات السابقة")}
             OutlinedButton(onClick=onStats,modifier=Modifier.weight(1f)){Icon(Icons.Default.BarChart,null);Text("الإحصاءات")}
@@ -308,7 +318,9 @@ class MainActivity : ComponentActivity() {
 @Composable private fun StatsScreen(db:AppDatabase,b:Bakery) {
     val scope= rememberCoroutineScope(); var from by remember{mutableStateOf("")};var to by remember{mutableStateOf("")};var rows by remember{mutableStateOf<List<DailyRecord>?>(null)};var err by remember{mutableStateOf<String?>(null)}
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-        Field("من تاريخ (YYYY-MM-DD)",from,{from=it});Field("إلى تاريخ (YYYY-MM-DD)",to,{to=it})
+        com.raghif.app.ui.RaghifSectionHeading("الإحصاءات")
+        CalendarDateField("من تاريخ",from,{from=it})
+        CalendarDateField("إلى تاريخ",to,{to=it})
         Button(onClick={val a=runCatching{LocalDate.parse(from)}.getOrNull();val z=runCatching{LocalDate.parse(to)}.getOrNull();if(a==null||z==null||a.isAfter(z)||z.isAfter(LocalDate.now()))err="تحقق من فترة التاريخ." else scope.launch{rows=db.dailyDao().between(b.id,from,to);err=if(rows!!.isEmpty())"لا توجد سجلات في الفترة المحددة." else null}},modifier=Modifier.fillMaxWidth()){Text("بحث")}
         err?.let{Text(it,color=MaterialTheme.colorScheme.error)}
         rows?.takeIf{it.isNotEmpty()}?.let{list->
@@ -375,7 +387,7 @@ class MainActivity : ComponentActivity() {
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Text("التقرير المالي — " + b.name, fontWeight=FontWeight.Bold, color=brown, fontSize=20.sp)
+        com.raghif.app.ui.RaghifSectionHeading("التقرير المالي — " + b.name)
         Text("التقرير خاص بالمخبز المحدد فقط. المباع آجل يُحسب بالريال من عدد الحبات وسعر الكيس المثبت في السجل.", fontSize=12.sp, color=Color.Gray)
         CalendarDateField("من تاريخ",from,{from=it;rows=null})
         CalendarDateField("إلى تاريخ",to,{to=it;rows=null})
@@ -435,9 +447,11 @@ class MainActivity : ComponentActivity() {
     val prefs=remember { context.getSharedPreferences("raghif_settings",android.content.Context.MODE_PRIVATE) }
     var sound by remember { mutableStateOf(prefs.getBoolean("click_sound",true)) }; var biometric by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(10.dp)) {
+        com.raghif.app.ui.RaghifSectionHeading("إعدادات التطبيق")
         Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("الوضع الليلي");Switch(night,onCheckedChange=onNightChange)} }
         Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("صوت النقر");Switch(sound,{sound=it;prefs.edit().putBoolean("click_sound",it).apply()})} }
         Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("الدخول بالبصمة (واجهة إعداد أولية)");Switch(biometric,{biometric=it})} }
+        com.raghif.app.ui.RaghifSectionHeading("إدارة البيانات")
         BackupActions(db)
         Text("رغيف — الإصدار 1.0.0\nحسابات يومية... بال تعقيد",color=Color.Gray)
     }
