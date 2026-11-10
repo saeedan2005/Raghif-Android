@@ -43,9 +43,17 @@ private val dbFmt = DateTimeFormatter.ISO_LOCAL_DATE
 private val uiFmt = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 private fun today() = LocalDate.now().format(dbFmt)
 private fun prettyDate(s: String) = runCatching { LocalDate.parse(s).format(uiFmt) }.getOrDefault(s)
-private fun fmt(n: Number): String = NumberFormat.getNumberInstance(ar).format(n)
+private fun fmt(n: Number): String = NumberFormat.getNumberInstance(Locale.US).format(n)
 private fun dayName(s: String) = runCatching { LocalDate.parse(s).dayOfWeek.getDisplayName(TextStyle.FULL, ar) }.getOrDefault("")
-private fun normalizedDigits(s: String) = s.trim().map { if (it in '٠'..'٩') ('0'.code + it.code - '٠'.code).toChar() else it }.joinToString("")
+private fun normalizedDigits(s: String) = s.trim().map { ch ->
+    when(ch) {
+        in '٠'..'٩' -> ('0'.code + ch.code - '٠'.code).toChar()
+        in '۰'..'۹' -> ('0'.code + ch.code - '۰'.code).toChar()
+        '٫' -> '.'
+        '/' -> '-'
+        else -> ch
+    }
+}.joinToString("")
 private fun cashSold(r: DailyRecord): Double = ReportMath.cashPieces(r)
 private fun difference(r: DailyRecord) = ReportMath.productionDifference(r)
 private fun avgBag(r: DailyRecord): Double? = ReportMath.averagePiecesPerFlourBag(r)
@@ -179,7 +187,7 @@ class MainActivity : ComponentActivity() {
         Text("إعدادات المبيعات",fontWeight=FontWeight.Bold,color=brown,fontSize=18.sp)
         Field("قيمة وحدة البيع (افتراضي 500)",revenue,{revenue=it},true); Field("عدد الحبات في الكيس (افتراضي 9)",pieces,{pieces=it},true); Field("وزن كيس الدقيق بالكيلو (افتراضي 50)",weight,{weight=it},true)
         Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-            Button(onClick={val n=normalizedDigits(number);val rv=revenue.toLongOrNull();val pc=pieces.toLongOrNull();val wt=weight.toDoubleOrNull()
+            Button(onClick={val n=normalizedDigits(number);val rv=normalizedDigits(revenue).toLongOrNull();val pc=normalizedDigits(pieces).toLongOrNull();val wt=normalizedDigits(weight).toDoubleOrNull()
                 if(n.isBlank()||!n.all{it.isDigit()}||name.isBlank()||rv==null||rv<=0||pc==null||pc<=0||wt==null||wt<=0) return@Button
                 onSave(Bakery(number=n,normalizedNumber=n.trimStart('0').ifBlank{"0"},name=name.trim(),normalizedName=name.trim().lowercase(Locale.ROOT),address=address.trim(),phone=phone.trim(),supervisorMobile=mobile.trim(),unitRevenue=rv,piecesPerBag=pc,flourBagWeight=wt)) },modifier=Modifier.weight(1f)){Text("حفظ")}
             OutlinedButton(onClick=onCancel,modifier=Modifier.weight(1f)){Text("إلغاء")}
@@ -199,7 +207,7 @@ class MainActivity : ComponentActivity() {
     var revenue by remember(initial){mutableStateOf(initial?.revenue?.toString().orEmpty())}
     var history by remember { mutableStateOf<List<DailyRecord>>(emptyList()) }
     var showHistory by remember { mutableStateOf(false) }
-    val f=flour.toLongOrNull()?:0; val p=pieces.toLongOrNull()?:0; val m=meal.toLongOrNull()?:0; val w=waste.toLongOrNull()?:0; val c=credit.toLongOrNull()?:0; val rev=revenue.toLongOrNull()?:0
+    val f=normalizedDigits(flour).toLongOrNull()?:0; val p=normalizedDigits(pieces).toLongOrNull()?:0; val m=normalizedDigits(meal).toLongOrNull()?:0; val w=normalizedDigits(waste).toLongOrNull()?:0; val c=normalizedDigits(credit).toLongOrNull()?:0; val rev=normalizedDigits(revenue).toLongOrNull()?:0
     val preview=DailyRecord(id=initial?.id?:0,bakeryId=bakery.id,date=date,flourKg=f,pieces=p,workersMeal=m,waste=w,creditSold=c,revenue=rev,note=note,unitRevenueUsed=initial?.unitRevenueUsed?:bakery.unitRevenue,piecesPerBagUsed=initial?.piecesPerBagUsed?:bakery.piecesPerBag,flourBagWeightUsed=initial?.flourBagWeightUsed?:bakery.flourBagWeight)
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
         Text(bakery.name,Modifier.fillMaxWidth(),fontSize=23.sp,fontWeight=FontWeight.Bold,color=brown)
@@ -223,13 +231,14 @@ class MainActivity : ComponentActivity() {
         } }
         Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
             Button(onClick={
-                val dt=runCatching{LocalDate.parse(date)}.getOrNull()
+                val dt=runCatching{LocalDate.parse(normalizedDigits(date))}.getOrNull()
                 val nums=listOf(flour,pieces,meal,waste,credit,revenue)
-                if(dt==null||dt.isAfter(LocalDate.now())||flour.toLongOrNull()==null||pieces.toLongOrNull()==null||revenue.toLongOrNull()==null||listOf(flour,pieces,revenue).any{(it.toLongOrNull()?:-1)<0}||listOf(meal,waste,credit).any{it.isNotBlank()&&(it.toLongOrNull()?:-1)<0}) { message("تحقق من التاريخ والحقول الرقمية؛ يجب أن تكون القيم أعدادًا صحيحة غير سالبة.");return@Button }
+                if(dt==null||dt.isAfter(LocalDate.now())||normalizedDigits(flour).toLongOrNull()==null||normalizedDigits(pieces).toLongOrNull()==null||normalizedDigits(revenue).toLongOrNull()==null||listOf(flour,pieces,revenue).any{(it.toLongOrNull()?:-1)<0}||listOf(meal,waste,credit).any{it.isNotBlank()&&(it.toLongOrNull()?:-1)<0}) { message("تحقق من التاريخ والحقول الرقمية؛ يجب أن تكون القيم أعدادًا صحيحة غير سالبة.");return@Button }
                 scope.launch {
-                    val duplicate=db.dailyDao().byDate(bakery.id,date)
+                    val safeDate=dt!!.format(dbFmt)
+                    val duplicate=db.dailyDao().byDate(bakery.id,safeDate)
                     if(duplicate!=null&&duplicate.id!=(initial?.id?:0L)) { message("يوجد سجل لهذا المخبز في هذا التاريخ.");return@launch }
-                    val record=preview.copy(id=initial?.id?:0,workersMeal=m,waste=w,creditSold=c,unitRevenueUsed=initial?.unitRevenueUsed?:bakery.unitRevenue,piecesPerBagUsed=initial?.piecesPerBagUsed?:bakery.piecesPerBag,flourBagWeightUsed=initial?.flourBagWeightUsed?:bakery.flourBagWeight)
+                    val record=preview.copy(id=initial?.id?:0,date=safeDate,workersMeal=m,waste=w,creditSold=c,unitRevenueUsed=initial?.unitRevenueUsed?:bakery.unitRevenue,piecesPerBagUsed=initial?.piecesPerBagUsed?:bakery.piecesPerBag,flourBagWeightUsed=initial?.flourBagWeightUsed?:bakery.flourBagWeight)
                     if(initial==null) { val id=db.dailyDao().insert(record); onSaved(record.copy(id=id)) } else { db.dailyDao().update(record);onSaved(record) }
                 }
             },modifier=Modifier.weight(1f)){Text("حفظ")}
