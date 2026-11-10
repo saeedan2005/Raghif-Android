@@ -28,4 +28,12 @@ object ReportMath {
         if (record.flourKg <= 0 || record.flourBagWeightUsed <= 0.0) return null
         return record.pieces.toDouble() / (record.flourKg / record.flourBagWeightUsed)
     }
+
+    /** Weighted by actual bags consumed, even when bag weights differ by day. */
+    fun averagePiecesPerBag(records: List<DailyRecord>): Double? {
+        val bags = records.sumOf { r ->
+            if (r.flourKg > 0 && r.flourBagWeightUsed > 0.0) r.flourKg / r.flourBagWeightUsed else 0.0
+        }
+        return if (bags > 0.0) records.sumOf { it.pieces.toDouble() } / bags else null
+    }
 }
