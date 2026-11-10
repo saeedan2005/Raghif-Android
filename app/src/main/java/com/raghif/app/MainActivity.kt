@@ -50,10 +50,37 @@ private fun difference(r: DailyRecord) = ReportMath.productionDifference(r)
 private fun avgBag(r: DailyRecord): Double? = ReportMath.averagePiecesPerFlourBag(r)
 
 class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); setContent { MaterialTheme(colorScheme = lightColorScheme(primary=brown, background=cream, surface=Color.White, secondary=Color(0xFFD8A15D))) { CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) { RaghifApp() } } } }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val settings = getSharedPreferences("raghif_settings", MODE_PRIVATE)
+        setContent {
+            var night by remember { mutableStateOf(settings.getBoolean("night", false)) }
+            val colors = if (night) darkColorScheme(
+                primary = Color(0xFFFFBF69),
+                onPrimary = Color(0xFF40200B),
+                background = Color(0xFF24170F),
+                surface = Color(0xFF39271E),
+                onSurface = Color(0xFFFFF0DC),
+                secondary = Color(0xFFFFD08A)
+            ) else lightColorScheme(
+                primary = brown,
+                background = cream,
+                surface = Color.White,
+                secondary = Color(0xFFD8A15D)
+            )
+            MaterialTheme(colorScheme = colors) {
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                    RaghifApp(night = night, onNightChange = { enabled ->
+                        night = enabled
+                        settings.edit().putBoolean("night", enabled).apply()
+                    })
+                }
+            }
+        }
+    }
 }
 
-@Composable private fun RaghifApp() {
+@Composable private fun RaghifApp(night:Boolean,onNightChange:(Boolean)->Unit) {
     val context = LocalContext.current
     val db = remember { AppDatabase.get(context) }
     val scope = rememberCoroutineScope()
@@ -65,7 +92,7 @@ class MainActivity : ComponentActivity() {
     var currentRecord by remember { mutableStateOf<DailyRecord?>(null) }
     var reportRows by remember { mutableStateOf<List<DailyRecord>>(emptyList()) }
 
-    Scaffold(containerColor=cream, topBar={
+    Scaffold(containerColor=MaterialTheme.colorScheme.background, topBar={
         TopAppBarRaghif(title=when(page) { "welcome"->"رغيف"; "bakeries"->"قائمة المخابز"; "bakeryForm"->if(editingBakery==null) "إنشاء مخبز جديد" else "تعديل المخبز"; "daily"->selected?.name ?: "البيانات اليومية"; "stats"->"الإحصاءات"; "financial"->"التقرير المالي"; "search"->"البحث في السجلات"; "settings"->"الإعدادات"; else->"رغيف" }, onBack={ page=when(page){"bakeries"->"welcome";"daily","settings"->"bakeries";"stats","financial","search"->"daily";"bakeryForm"->"bakeries";else->"welcome"} })
     }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement=Arrangement.spacedBy(12.dp)) {
@@ -125,7 +152,7 @@ class MainActivity : ComponentActivity() {
                 "stats" -> selected?.let { StatsScreen(db,it) }
                 "financial" -> selected?.let { FinancialScreen(db,it) }
                 "search" -> selected?.let { b -> SearchScreen(db,b,onOpen={record -> currentRecord=record;page="daily"}) }
-                "settings" -> SettingsScreen(db)
+                "settings" -> SettingsScreen(db,night,onNightChange)
             }
         }
     }
@@ -134,7 +161,7 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable private fun TopAppBarRaghif(title:String,onBack:()->Unit) {
-    TopAppBar(title={Text(title,fontWeight=FontWeight.Bold)}, navigationIcon={ IconButton(onClick=onBack){Icon(Icons.Default.ArrowBack,null)} }, colors=TopAppBarDefaults.topAppBarColors(containerColor=cream))
+    TopAppBar(title={Text(title,fontWeight=FontWeight.Bold)}, navigationIcon={ IconButton(onClick=onBack){Icon(Icons.Default.ArrowBack,null)} }, colors=TopAppBarDefaults.topAppBarColors(containerColor=MaterialTheme.colorScheme.background))
 }
 @Composable private fun BigButton(label:String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick:()->Unit) { Button(onClick=onClick, modifier=Modifier.fillMaxWidth().height(58.dp), shape=RoundedCornerShape(16.dp)) { Icon(icon,null); Spacer(Modifier.width(8.dp)); Text(label,fontSize=17.sp) } }
 @Composable private fun EmptyMessage(text:String) { Card(Modifier.fillMaxWidth()) { Text(text,Modifier.padding(16.dp),color=Color.Gray) } }
@@ -343,10 +370,10 @@ class MainActivity : ComponentActivity() {
         Text(value,fontWeight=if(bold) FontWeight.Bold else FontWeight.Normal,fontSize=12.sp)
     }
 }
-@Composable private fun SettingsScreen(db:AppDatabase) {
-    var night by remember { mutableStateOf(false) }; var sound by remember { mutableStateOf(true) }; var biometric by remember { mutableStateOf(false) }
+@Composable private fun SettingsScreen(db:AppDatabase,night:Boolean,onNightChange:(Boolean)->Unit) {
+    var sound by remember { mutableStateOf(true) }; var biometric by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(10.dp)) {
-        Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("الوضع الليلي");Switch(night,{night=it})} }
+        Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("الوضع الليلي");Switch(night,onCheckedChange=onNightChange)} }
         Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("صوت النقر");Switch(sound,{sound=it})} }
         Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("الدخول بالبصمة (واجهة إعداد أولية)");Switch(biometric,{biometric=it})} }
         BackupActions(db)
