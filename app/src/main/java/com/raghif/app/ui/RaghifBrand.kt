@@ -1,6 +1,11 @@
 package com.raghif.app.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,6 +49,8 @@ object RaghifPalette {
 @Composable
 fun RaghifBrandHeader(title: String, isRoot: Boolean, onBack: () -> Unit) {
     val isDark = MaterialTheme.colorScheme.background.red < 0.25f
+    val context=LocalContext.current
+    val referenceArtwork=context.resources.getIdentifier("raghif_header","drawable",context.packageName)
     val topColors = if (isDark) listOf(Color(0xFF35200E),Color(0xFF52300F)) else
         listOf(Color(0xFFFFEACC),Color(0xFFFFC866),Color(0xFFFFECCC))
     Column(
@@ -51,7 +58,20 @@ fun RaghifBrandHeader(title: String, isRoot: Boolean, onBack: () -> Unit) {
         horizontalAlignment=Alignment.CenterHorizontally,
         verticalArrangement=Arrangement.spacedBy(4.dp)
     ) {
-        Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
+        if(referenceArtwork != 0) {
+            Box(Modifier.fillMaxWidth()) {
+                Image(
+                    painter=painterResource(referenceArtwork),
+                    contentDescription="الهوية الأصلية لرغيف",
+                    modifier=Modifier.fillMaxWidth().aspectRatio(1024f/193f),
+                    contentScale=ContentScale.FillBounds
+                )
+                IconButton(onClick=onBack,modifier=Modifier.align(Alignment.TopEnd)) {
+                    Icon(if(isRoot) Icons.Filled.ExitToApp else Icons.Filled.ArrowBack,
+                        contentDescription=if(isRoot)"الخروج" else "رجوع",tint=RaghifPalette.coffee)
+                }
+            }
+        } else Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
             Text("🌾",fontSize=29.sp)
             Column(horizontalAlignment=Alignment.CenterHorizontally) {
                 Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
