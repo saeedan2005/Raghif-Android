@@ -125,7 +125,7 @@ class MainActivity : ComponentActivity() {
                 "stats" -> selected?.let { StatsScreen(db,it) }
                 "financial" -> selected?.let { FinancialScreen(db,it) }
                 "search" -> selected?.let { b -> SearchScreen(db,b,onOpen={record -> currentRecord=record;page="daily"}) }
-                "settings" -> SettingsScreen()
+                "settings" -> SettingsScreen(db)
             }
         }
     }
@@ -343,12 +343,13 @@ class MainActivity : ComponentActivity() {
         Text(value,fontWeight=if(bold) FontWeight.Bold else FontWeight.Normal,fontSize=12.sp)
     }
 }
-@Composable private fun SettingsScreen() {
+@Composable private fun SettingsScreen(db:AppDatabase) {
     var night by remember { mutableStateOf(false) }; var sound by remember { mutableStateOf(true) }; var biometric by remember { mutableStateOf(false) }
-    Column(verticalArrangement=Arrangement.spacedBy(10.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(10.dp)) {
         Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("الوضع الليلي");Switch(night,{night=it})} }
         Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("صوت النقر");Switch(sound,{sound=it})} }
         Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("الدخول بالبصمة (واجهة إعداد أولية)");Switch(biometric,{biometric=it})} }
+        BackupActions(db)
         Text("رغيف — الإصدار 1.0.0\nحسابات يومية... بال تعقيد",color=Color.Gray)
     }
 }
