@@ -35,6 +35,9 @@ import com.raghif.app.reports.RecordCharts
 import com.raghif.app.ui.RaghifDateField
 import com.raghif.app.ui.LocalRaghifSound
 import com.raghif.app.ui.playRaghifClick
+import com.raghif.app.ui.RaghifHeader
+import com.raghif.app.ui.RaghifSectionTitle
+import com.raghif.app.ui.RaghifPalette
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.time.LocalDate
@@ -131,9 +134,20 @@ class MainActivity : ComponentActivity() {
     Scaffold(containerColor=MaterialTheme.colorScheme.background, topBar={
         TopAppBarRaghif(title=when(page) { "bakeries"->"قائمة المخابز"; "bakeryForm"->if(editingBakery==null) "إنشاء مخبز جديد" else "تعديل المخبز"; "daily"->selected?.name ?: "البيانات اليومية"; "stats"->"الإحصاءات"; "financial"->"التقرير المالي"; "search"->"البحث في السجلات"; "settings"->"الإعدادات"; else->"رغيف" }, onBack={clickSound(); goBack()}, showBack=page!="bakeries")
     }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement=Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.fillMaxSize().padding(padding).padding(12.dp), verticalArrangement=Arrangement.spacedBy(12.dp)) {
+            RaghifHeader(when(page) {
+                "bakeries" -> "اختر المخبز"
+                "bakeryForm" -> "بيانات المخبز"
+                "daily" -> "إدخال البيانات اليومية"
+                "financial" -> "التقارير المالية"
+                "stats" -> "الإحصاءات"
+                "search" -> "البحث في السجلات"
+                "settings" -> "الإعدادات"
+                else -> "رغيف"
+            })
             when(page) {
                 "bakeries" -> {
+                    RaghifSectionTitle("المخابز المسجلة")
                     Row(Modifier.fillMaxWidth(), horizontalArrangement=Arrangement.spacedBy(8.dp)) {
                         Button(onClick={clickSound();editingBakery=null;navigate("bakeryForm")}, modifier=Modifier.weight(1f)) { Icon(Icons.Default.Add,null); Text("مخبز جديد") }
                         OutlinedButton(onClick={clickSound();navigate("settings")}) { Icon(Icons.Default.Settings,null); Text("الإعدادات") }
@@ -200,7 +214,7 @@ class MainActivity : ComponentActivity() {
     var revenue by remember(existing){mutableStateOf((existing?.unitRevenue?:500).toString())}; var pieces by remember(existing){mutableStateOf((existing?.piecesPerBag?:9).toString())}; var weight by remember(existing){mutableStateOf((existing?.flourBagWeight?:50.0).toString())}
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
         Field("رقم المخبز",number,{number=it},true); Field("اسم المخبز",name,{name=it}); Field("العنوان (اختياري)",address,{address=it}); Field("رقم هاتف المخبز (اختياري)",phone,{phone=it},true); Field("جوال المشرف (اختياري)",mobile,{mobile=it},true)
-        Text("إعدادات المبيعات",fontWeight=FontWeight.Bold,color=brown,fontSize=18.sp)
+        RaghifSectionTitle("إعدادات المبيعات")
         Field("قيمة وحدة البيع (افتراضي 500)",revenue,{revenue=it},true); Field("عدد الحبات في الكيس (افتراضي 9)",pieces,{pieces=it},true); Field("وزن كيس الدقيق بالكيلو (افتراضي 50)",weight,{weight=it},true)
         Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
             Button(onClick={val n=normalizedDigits(number);val rv=normalizedDigits(revenue).toLongOrNull();val pc=normalizedDigits(pieces).toLongOrNull();val wt=normalizedDigits(weight).toDoubleOrNull()
@@ -227,7 +241,7 @@ class MainActivity : ComponentActivity() {
     val preview=DailyRecord(id=initial?.id?:0,bakeryId=bakery.id,date=date,flourKg=f,pieces=p,workersMeal=m,waste=w,creditSold=c,revenue=rev,note=note,unitRevenueUsed=initial?.unitRevenueUsed?:bakery.unitRevenue,piecesPerBagUsed=initial?.piecesPerBagUsed?:bakery.piecesPerBag,flourBagWeightUsed=initial?.flourBagWeightUsed?:bakery.flourBagWeight)
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
         Text(bakery.name,Modifier.fillMaxWidth(),fontSize=23.sp,fontWeight=FontWeight.Bold,color=brown)
-        Text("حسابات يومية... بال تعقيد",color=Color.Gray)
+        RaghifSectionTitle("بيانات السجل والإنتاج")
         Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick={scope.launch { history=db.dailyDao().all(bakery.id);showHistory=true }},modifier=Modifier.weight(1f)){Icon(Icons.Default.Search,null);Text("السجلات السابقة")}
             OutlinedButton(onClick=onStats,modifier=Modifier.weight(1f)){Icon(Icons.Default.BarChart,null);Text("الإحصاءات")}
@@ -236,8 +250,8 @@ class MainActivity : ComponentActivity() {
         OutlinedButton(onClick=onSearch,modifier=Modifier.fillMaxWidth()){Icon(Icons.Default.Search,null);Text("البحث في السجلات")}
         RaghifDateField("التاريخ",date,{date=it})
         Text("اليوم: ${dayName(date)}",color=brown,fontWeight=FontWeight.Bold)
-        Field("المالحظة",note,{note=it},singleLine=false)
-        Field("كمية الدقيق (كجم)",flour,{flour=it},true); Field("عدد الأقراص",pieces,{pieces=it},true)
+        Field("الملاحظات",note,{note=it},singleLine=false)
+0,{flour=it},true); Field("عدد الأقراص",pieces,{pieces=it},true)
         Field("عشاء العمال (اختياري)",meal,{meal=it},true); Field("التالف (اختياري)",waste,{waste=it},true)
         Field("المباع آجل (اختياري)",credit,{credit=it},true); Field("الإيراد (ريال)",revenue,{revenue=it},true)
         Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
@@ -309,7 +323,7 @@ class MainActivity : ComponentActivity() {
             (start == null || r.date >= start.format(dbFmt)) && (end == null || r.date <= end.format(dbFmt))
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(10.dp)) {
-        Text("البحث في سجلات " + bakery.name,fontWeight=FontWeight.Bold,fontSize=20.sp,color=brown)
+        RaghifSectionTitle("البحث في سجلات " + bakery.name)
         Field("رقم السجل أو التاريخ أو الملاحظات",query,{query=it})
         Field("من تاريخ (اختياري، YYYY-MM-DD)",from,{from=it})
         Field("إلى تاريخ (اختياري، YYYY-MM-DD)",to,{to=it})
@@ -343,7 +357,7 @@ class MainActivity : ComponentActivity() {
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Text("التقرير المالي — " + b.name, fontWeight=FontWeight.Bold, color=brown, fontSize=20.sp)
+        RaghifSectionTitle("التقرير المالي — " + b.name)
         Text("التقرير خاص بالمخبز المحدد فقط. المباع آجل يُحسب بالريال من عدد الحبات وسعر الكيس المثبت في السجل.", fontSize=12.sp, color=Color.Gray)
         RaghifDateField("من تاريخ",from,{from=it;rows=null})
         RaghifDateField("إلى تاريخ",to,{to=it;rows=null})
