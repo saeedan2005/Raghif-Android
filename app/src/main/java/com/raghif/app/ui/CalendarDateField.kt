@@ -30,8 +30,14 @@ fun CalendarDateField(
     val date = runCatching { LocalDate.parse(isoDate) }.getOrDefault(LocalDate.now())
     OutlinedButton(
         onClick = {
+            val ar = Locale("ar")
+            val config = android.content.res.Configuration(context.resources.configuration).apply {
+                setLocale(ar)
+                setLayoutDirection(ar)
+            }
+            val arabicContext = context.createConfigurationContext(config)
             DatePickerDialog(
-                context,
+                arabicContext,
                 { _, year, month, day ->
                     onDateSelected(LocalDate.of(year, month + 1, day).format(DateTimeFormatter.ISO_LOCAL_DATE))
                 },
