@@ -291,7 +291,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable private fun StatsScreen(db:AppDatabase,b:Bakery) {
-    val scope= rememberCoroutineScope(); val tap=LocalRaghifSound.current; var from by remember{mutableStateOf("")};var to by remember{mutableStateOf("")};var rows by remember{mutableStateOf<List<DailyRecord>?>(null)};var err by remember{mutableStateOf<String?>(null)}
+    val scope= rememberCoroutineScope(); val tap=LocalRaghifSound.current; var from by remember{mutableStateOf(LocalDate.now().withDayOfMonth(1).format(dbFmt))};var to by remember{mutableStateOf(today())};var rows by remember{mutableStateOf<List<DailyRecord>?>(null)};var err by remember{mutableStateOf<String?>(null)}
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
         RaghifDateField("من تاريخ",from,{from=it});RaghifDateField("إلى تاريخ",to,{to=it})
         Button(onClick={tap();val a=runCatching{LocalDate.parse(from)}.getOrNull();val z=runCatching{LocalDate.parse(to)}.getOrNull();if(a==null||z==null||a.isAfter(z)||z.isAfter(LocalDate.now()))err="تحقق من فترة التاريخ." else scope.launch{rows=db.dailyDao().between(b.id,from,to);err=if(rows!!.isEmpty())"لا توجد سجلات في الفترة المحددة." else null}},modifier=Modifier.fillMaxWidth()){Text("بحث")}
