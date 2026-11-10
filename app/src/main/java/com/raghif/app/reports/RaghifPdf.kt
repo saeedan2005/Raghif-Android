@@ -3,6 +3,8 @@ package com.raghif.app.reports
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.LinearGradient
+import android.graphics.Shader
 import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
 import android.text.Layout
@@ -71,6 +73,37 @@ object RaghifPdf {
         }
     }
 
+    fun summary(
+        bakery: Bakery,
+        records: List<DailyRecord>,
+        from: String,
+        to: String,
+        title: String = "التقرير العام"
+    ): ByteArray {
+        val rows = records.filter { it.bakeryId == bakery.id && it.date >= from && it.date <= to }
+        require(rows.isNotEmpty()) { "لا توجد سجلات للتصدير" }
+        val document = PdfDocument()
+        try {
+            val sheet = page(document, 1, title, bakery, "الفترة من " + formatDate(from) + " إلى " + formatDate(to))
+            val revenue = rows.sumOf { it.revenue.toDouble() }
+            val deferred = rows.sumOf { ReportMath.deferredValue(it) }
+            sheet.labelRow("عدد السجلات", amount(rows.size) + " سجل")
+            sheet.labelRow("إجمالي عدد الحبات", amount(rows.sumOf { it.pieces }) + " حبة")
+            sheet.labelRow("كمية الدقيق", amount(rows.sumOf { it.flourKg }) + " كيلو")
+            sheet.labelRow("عشاء العمال", amount(rows.sumOf { it.workersMeal }) + " حبة")
+            sheet.labelRow("التالف", amount(rows.sumOf { it.waste }) + " حبة")
+            sheet.labelRow("المبيعات الآجلة", amount(deferred) + " ريال")
+            sheet.labelRow("الإيرادات النقدية", amount(revenue) + " ريال")
+            sheet.labelRow("إجمالي المبيعات", amount(revenue + deferred) + " ريال")
+            sheet.labelRow("الفرق في الإنتاج", amount(rows.sumOf { ReportMath.productionDifference(it) }) + " حبة")
+            sheet.labelRow("متوسط إنتاج الكيس", ReportMath.averagePiecesPerBag(rows)?.let { amount(it) + " حبة" } ?: "غير متاح")
+            sheet.finish()
+            return bytes(document)
+        } finally {
+            document.close()
+        }
+    }
+
     fun daily(bakery: Bakery, record: DailyRecord): ByteArray {
         require(record.bakeryId == bakery.id) { "السجل لا ينتمي إلى المخبز المحدد" }
         val document = PdfDocument()
@@ -122,10 +155,17 @@ object RaghifPdf {
 
         init {
             canvas.drawColor(Color.WHITE)
-            rect(0f, 0f, PAGE_WIDTH.toFloat(), 111f, brown)
+            val banner = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                shader = LinearGradient(0f, 0f, PAGE_WIDTH.toFloat(), 118f,
+                    intArrayOf(Color.rgb(84, 33, 6), Color.rgb(184, 84, 7), Color.rgb(100, 39, 10)),
+                    null, Shader.TileMode.CLAMP)
+            }
+            canvas.drawRect(0f,0f,PAGE_WIDTH.toFloat(),111f,banner)
             rect(0f, 111f, PAGE_WIDTH.toFloat(), 119f, gold)
-            text("رغيف | إدارة البيانات اليومية للمخابز", LEFT, 17f, PAGE_WIDTH - 2f * LEFT, 17f, Color.WHITE, center = true, bold = true)
-            text(title, LEFT, 50f, PAGE_WIDTH - 2f * LEFT, 26f, Color.WHITE, center = true, bold = true)
+            text("🌾", 30f, 21f, 70f, 24f, gold, center = true)
+            text("🍞", 493f, 21f, 70f, 24f, gold, center = true)
+            text("رغيف | إدارة البيانات اليومية للمخابز", LEFT, 15f, PAGE_WIDTH - 2f * LEFT, 17f, Color.WHITE, center = true, bold = true)
+            text(title, LEFT, 52f, PAGE_WIDTH - 2f * LEFT, 25f, Color.WHITE, center = true, bold = true)
             text(bakery, LEFT, 126f, PAGE_WIDTH - 2f * LEFT, 18f, dark, center = true, bold = true)
             text(period, LEFT, 150f, PAGE_WIDTH - 2f * LEFT, 11f, dark, center = true)
             rect(LEFT, 777f, RIGHT, 778f, gold)
