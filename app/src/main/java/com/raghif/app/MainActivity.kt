@@ -253,7 +253,7 @@ class MainActivity : ComponentActivity() {
         RaghifDateField("التاريخ",date,{date=it})
         Text("اليوم: ${dayName(date)}",color=brown,fontWeight=FontWeight.Bold)
         Field("الملاحظات",note,{note=it},singleLine=false)
-0,{flour=it},true); Field("عدد الأقراص",pieces,{pieces=it},true)
+        Field("كمية الدقيق (كجم)",flour,{flour=it},true); Field("عدد الأقراص",pieces,{pieces=it},true)
         Field("عشاء العمال (اختياري)",meal,{meal=it},true); Field("التالف (اختياري)",waste,{waste=it},true)
         Field("المباع آجل (اختياري)",credit,{credit=it},true); Field("الإيراد (ريال)",revenue,{revenue=it},true)
         Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
