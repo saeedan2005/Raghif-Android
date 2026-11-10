@@ -66,7 +66,7 @@ class MainActivity : ComponentActivity() {
     var reportRows by remember { mutableStateOf<List<DailyRecord>>(emptyList()) }
 
     Scaffold(containerColor=cream, topBar={
-        TopAppBarRaghif(title=when(page) { "welcome"->"رغيف"; "bakeries"->"قائمة المخابز"; "bakeryForm"->if(editingBakery==null) "إنشاء مخبز جديد" else "تعديل المخبز"; "daily"->selected?.name ?: "البيانات اليومية"; "stats"->"الإحصاءات"; "financial"->"التقرير المالي"; "settings"->"الإعدادات"; else->"رغيف" }, onBack={ page=when(page){"bakeries"->"welcome";"daily","settings"->"bakeries";"stats","financial"->"daily";"bakeryForm"->"bakeries";else->"welcome"} })
+        TopAppBarRaghif(title=when(page) { "welcome"->"رغيف"; "bakeries"->"قائمة المخابز"; "bakeryForm"->if(editingBakery==null) "إنشاء مخبز جديد" else "تعديل المخبز"; "daily"->selected?.name ?: "البيانات اليومية"; "stats"->"الإحصاءات"; "financial"->"التقرير المالي"; "search"->"البحث في السجلات"; "settings"->"الإعدادات"; else->"رغيف" }, onBack={ page=when(page){"bakeries"->"welcome";"daily","settings"->"bakeries";"stats","financial","search"->"daily";"bakeryForm"->"bakeries";else->"welcome"} })
     }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement=Arrangement.spacedBy(12.dp)) {
             when(page) {
@@ -116,7 +116,7 @@ class MainActivity : ComponentActivity() {
                     }
                 })
                 "daily" -> selected?.let { b ->
-                    DailyScreen(db,b,currentRecord,onChoose={currentRecord=it},onNew={currentRecord=null},onSaved={currentRecord=it;message="تم حفظ السجل اليومي.";},onStats={page="stats"},onFinancial={page="financial"},onShare={record ->
+                    DailyScreen(db,b,currentRecord,onChoose={currentRecord=it},onNew={currentRecord=null},onSaved={currentRecord=it;message="تم حفظ السجل اليومي.";},onStats={page="stats"},onFinancial={page="financial"},onSearch={page="search"},onShare={record ->
                         val share = "رغيف | ${b.name}\nالتاريخ: ${prettyDate(record.date)}\nاليوم: ${dayName(record.date)}\nالملاحظة: ${record.note}\nكمية الدقيق: ${fmt(record.flourKg)} كجم\nعدد الأقراص: ${fmt(record.pieces)}\nعشاء العمال: ${fmt(record.workersMeal)}\nالتالف: ${fmt(record.waste)}\nالمباع آجل: ${fmt(record.creditSold)}\nالإيراد: ${fmt(record.revenue)} ريال\nالمباع نقدًا: ${fmt(cashSold(record))}\nالفرق: ${fmt(difference(record))}"
                         val intent=Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT,share)
                         context.startActivity(Intent.createChooser(intent,"مشاركة السجل"))
@@ -124,6 +124,7 @@ class MainActivity : ComponentActivity() {
                 }
                 "stats" -> selected?.let { StatsScreen(db,it) }
                 "financial" -> selected?.let { FinancialScreen(db,it) }
+                "search" -> selected?.let { b -> SearchScreen(db,b,onOpen={record -> currentRecord=record;page="daily"}) }
                 "settings" -> SettingsScreen()
             }
         }
@@ -158,7 +159,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable private fun DailyScreen(db:AppDatabase,bakery:Bakery,initial:DailyRecord?,onChoose:(DailyRecord?)->Unit,onNew:()->Unit,onSaved:(DailyRecord)->Unit,onStats:()->Unit,onFinancial:()->Unit,onShare:(DailyRecord)->Unit,message:(String)->Unit) {
+@Composable private fun DailyScreen(db:AppDatabase,bakery:Bakery,initial:DailyRecord?,onChoose:(DailyRecord?)->Unit,onNew:()->Unit,onSaved:(DailyRecord)->Unit,onStats:()->Unit,onFinancial:()->Unit,onSearch:()->Unit,onShare:(DailyRecord)->Unit,message:(String)->Unit) {
     val scope= rememberCoroutineScope()
     var date by remember(initial){mutableStateOf(initial?.date ?: today())}
     var note by remember(initial){mutableStateOf(initial?.note.orEmpty())}
@@ -180,6 +181,7 @@ class MainActivity : ComponentActivity() {
             OutlinedButton(onClick=onStats,modifier=Modifier.weight(1f)){Icon(Icons.Default.BarChart,null);Text("الإحصاءات")}
         }
         OutlinedButton(onClick=onFinancial,modifier=Modifier.fillMaxWidth()){Icon(Icons.Default.ReceiptLong,null);Text("التقرير المالي")}
+        OutlinedButton(onClick=onSearch,modifier=Modifier.fillMaxWidth()){Icon(Icons.Default.Search,null);Text("البحث في السجلات")}
         Field("التاريخ (YYYY-MM-DD)",date,{date=it})
         Text("اليوم: ${dayName(date)}",color=brown,fontWeight=FontWeight.Bold)
         Field("المالحظة",note,{note=it},singleLine=false)
@@ -235,6 +237,46 @@ class MainActivity : ComponentActivity() {
     }
 }
 @Composable private fun Stat(label:String,value:String){Card(Modifier.fillMaxWidth()){Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text(label);Text(value,fontWeight=FontWeight.Bold,color=brown)}}}
+
+
+@Composable private fun SearchScreen(db:AppDatabase, bakery:Bakery, onOpen:(DailyRecord)->Unit) {
+    val all by db.dailyDao().observe(bakery.id).collectAsState(initial=emptyList())
+    var query by remember(bakery.id) { mutableStateOf("") }
+    var from by remember(bakery.id) { mutableStateOf("") }
+    var to by remember(bakery.id) { mutableStateOf("") }
+    val start = if (from.isBlank()) null else runCatching { LocalDate.parse(normalizedDigits(from)) }.getOrNull()
+    val end = if (to.isBlank()) null else runCatching { LocalDate.parse(normalizedDigits(to)) }.getOrNull()
+    val datesValid = (from.isBlank() || start != null) && (to.isBlank() || end != null) && (start == null || end == null || !start.isAfter(end))
+    val lookup = normalizedDigits(query).trim().replace('/', '-')
+    val found = if (!datesValid) emptyList() else all.filter { r ->
+        (lookup.isBlank() || r.id.toString().contains(lookup) || r.date.contains(lookup) ||
+            r.note.contains(query.trim(), ignoreCase=true) || bakery.name.contains(query.trim(), ignoreCase=true)) &&
+            (start == null || r.date >= start.format(dbFmt)) && (end == null || r.date <= end.format(dbFmt))
+    }
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(10.dp)) {
+        Text("البحث في سجلات " + bakery.name,fontWeight=FontWeight.Bold,fontSize=20.sp,color=brown)
+        Field("رقم السجل أو التاريخ أو الملاحظات",query,{query=it})
+        Field("من تاريخ (اختياري، YYYY-MM-DD)",from,{from=it})
+        Field("إلى تاريخ (اختياري، YYYY-MM-DD)",to,{to=it})
+        if(!datesValid) Text("يرجى إدخال تواريخ صحيحة وبترتيب صحيح.",color=MaterialTheme.colorScheme.error)
+        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
+            Text("نتائج البحث: " + found.size,fontWeight=FontWeight.Bold)
+            TextButton(onClick={query="";from="";to=""}){Text("مسح البحث")}
+        }
+        if(found.isEmpty() && datesValid) EmptyMessage("لا توجد سجلات مطابقة.")
+        found.forEach { r ->
+            Card(Modifier.fillMaxWidth().clickable { onOpen(r) },shape=RoundedCornerShape(16.dp)) {
+                Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
+                    Text("السجل رقم " + r.id + " — " + prettyDate(r.date),fontWeight=FontWeight.Bold,color=brown)
+                    Text("كمية الدقيق: " + fmt(r.flourKg) + " كيلو • عدد الحبات: " + fmt(r.pieces))
+                    Text("الإيراد: " + fmt(r.revenue) + " ريال")
+                    if(r.note.isNotBlank()) Text(r.note,maxLines=2)
+                    Text("اضغط لعرض السجل وتعديله",color=Color.Gray,fontSize=12.sp)
+                }
+            }
+        }
+    }
+}
 
 @Composable private fun FinancialScreen(db:AppDatabase,b:Bakery) {
     val scope = rememberCoroutineScope()
