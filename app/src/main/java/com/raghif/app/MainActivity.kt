@@ -178,7 +178,7 @@ class MainActivity : ComponentActivity() {
                     }
                 })
                 "daily" -> selected?.let { b ->
-                    DailyScreen(db,b,currentRecord,onChoose={currentRecord=it},onNew={currentRecord=null},onSaved={currentRecord=it;message="تم حفظ السجل اليومي.";},onStats={clickSound();navigate("stats")},onFinancial={clickSound();navigate("financial")},onSearch={clickSound();navigate("search")},onShare={_ -> clickSound()},message={message=it})
+                    DailyScreen(db,b,currentRecord,onChoose={currentRecord=it},onNew={currentRecord=null},onSaved={currentRecord=it;message="تم حفظ السجل اليومي.";},onStats={clickSound();navigate("stats")},onFinancial={clickSound();navigate("financial")},onSearch={clickSound();navigate("search")},message={message=it})
                 }
                 "stats" -> selected?.let { StatsScreen(db,it) }
                 "financial" -> selected?.let { FinancialScreen(db,it) }
@@ -209,6 +209,7 @@ class MainActivity : ComponentActivity() {
     OutlinedTextField(value=value,onValueChange=onValue,label={Text(label)},modifier=Modifier.fillMaxWidth(),singleLine=singleLine,keyboardOptions=KeyboardOptions(keyboardType=if(numeric) KeyboardType.Number else KeyboardType.Text))
 }
 @Composable private fun BakeryForm(existing:Bakery?,onCancel:()->Unit,onSave:(Bakery)->Unit) {
+    val tap = LocalRaghifSound.current
     var number by remember(existing){mutableStateOf(existing?.number.orEmpty())}; var name by remember(existing){mutableStateOf(existing?.name.orEmpty())}
     var address by remember(existing){mutableStateOf(existing?.address.orEmpty())}; var phone by remember(existing){mutableStateOf(existing?.phone.orEmpty())}; var mobile by remember(existing){mutableStateOf(existing?.supervisorMobile.orEmpty())}
     var revenue by remember(existing){mutableStateOf((existing?.unitRevenue?:500).toString())}; var pieces by remember(existing){mutableStateOf((existing?.piecesPerBag?:9).toString())}; var weight by remember(existing){mutableStateOf((existing?.flourBagWeight?:50.0).toString())}
@@ -217,16 +218,17 @@ class MainActivity : ComponentActivity() {
         RaghifSectionTitle("إعدادات المبيعات")
         Field("قيمة وحدة البيع (افتراضي 500)",revenue,{revenue=it},true); Field("عدد الحبات في الكيس (افتراضي 9)",pieces,{pieces=it},true); Field("وزن كيس الدقيق بالكيلو (افتراضي 50)",weight,{weight=it},true)
         Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-            Button(onClick={val n=normalizedDigits(number);val rv=normalizedDigits(revenue).toLongOrNull();val pc=normalizedDigits(pieces).toLongOrNull();val wt=normalizedDigits(weight).toDoubleOrNull()
+            Button(onClick={tap();val n=normalizedDigits(number);val rv=normalizedDigits(revenue).toLongOrNull();val pc=normalizedDigits(pieces).toLongOrNull();val wt=normalizedDigits(weight).toDoubleOrNull()
                 if(n.isBlank()||!n.all{it.isDigit()}||name.isBlank()||rv==null||rv<=0||pc==null||pc<=0||wt==null||wt<=0) return@Button
                 onSave(Bakery(number=n,normalizedNumber=n.trimStart('0').ifBlank{"0"},name=name.trim(),normalizedName=name.trim().lowercase(Locale.ROOT),address=address.trim(),phone=phone.trim(),supervisorMobile=mobile.trim(),unitRevenue=rv,piecesPerBag=pc,flourBagWeight=wt)) },modifier=Modifier.weight(1f)){Text("حفظ")}
-            OutlinedButton(onClick=onCancel,modifier=Modifier.weight(1f)){Text("إلغاء")}
+            OutlinedButton(onClick={tap();onCancel()},modifier=Modifier.weight(1f)){Text("إلغاء")}
         }
     }
 }
 
-@Composable private fun DailyScreen(db:AppDatabase,bakery:Bakery,initial:DailyRecord?,onChoose:(DailyRecord?)->Unit,onNew:()->Unit,onSaved:(DailyRecord)->Unit,onStats:()->Unit,onFinancial:()->Unit,onSearch:()->Unit,onShare:(DailyRecord)->Unit,message:(String)->Unit) {
+@Composable private fun DailyScreen(db:AppDatabase,bakery:Bakery,initial:DailyRecord?,onChoose:(DailyRecord?)->Unit,onNew:()->Unit,onSaved:(DailyRecord)->Unit,onStats:()->Unit,onFinancial:()->Unit,onSearch:()->Unit,message:(String)->Unit) {
     val scope= rememberCoroutineScope()
+    val tap=LocalRaghifSound.current
     var date by remember(initial){mutableStateOf(initial?.date ?: today())}
     var note by remember(initial){mutableStateOf(initial?.note.orEmpty())}
     var flour by remember(initial){mutableStateOf(initial?.flourKg?.toString().orEmpty())}
@@ -243,7 +245,7 @@ class MainActivity : ComponentActivity() {
         Text(bakery.name,Modifier.fillMaxWidth(),fontSize=23.sp,fontWeight=FontWeight.Bold,color=brown)
         RaghifSectionTitle("بيانات السجل والإنتاج")
         Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick={scope.launch { history=db.dailyDao().all(bakery.id);showHistory=true }},modifier=Modifier.weight(1f)){Icon(Icons.Default.Search,null);Text("السجلات السابقة")}
+            OutlinedButton(onClick={tap();scope.launch { history=db.dailyDao().all(bakery.id);showHistory=true }},modifier=Modifier.weight(1f)){Icon(Icons.Default.Search,null);Text("السجلات السابقة")}
             OutlinedButton(onClick=onStats,modifier=Modifier.weight(1f)){Icon(Icons.Default.BarChart,null);Text("الإحصاءات")}
         }
         OutlinedButton(onClick=onFinancial,modifier=Modifier.fillMaxWidth()){Icon(Icons.Default.ReceiptLong,null);Text("التقرير المالي")}
@@ -261,6 +263,7 @@ class MainActivity : ComponentActivity() {
         } }
         Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
             Button(onClick={
+                tap()
                 val dt=runCatching{LocalDate.parse(normalizedDigits(date))}.getOrNull()
                 val nums=listOf(flour,pieces,meal,waste,credit,revenue)
                 if(dt==null||dt.isAfter(LocalDate.now())||normalizedDigits(flour).toLongOrNull()==null||normalizedDigits(pieces).toLongOrNull()==null||normalizedDigits(revenue).toLongOrNull()==null||listOf(flour,pieces,revenue).any{(normalizedDigits(it).toLongOrNull()?:-1)<0}||listOf(meal,waste,credit).any{it.isNotBlank()&&(normalizedDigits(it).toLongOrNull()?:-1)<0}) { message("تحقق من التاريخ والحقول الرقمية؛ يجب أن تكون القيم أعدادًا صحيحة غير سالبة.");return@Button }
@@ -272,7 +275,7 @@ class MainActivity : ComponentActivity() {
                     if(initial==null) { val id=db.dailyDao().insert(record); onSaved(record.copy(id=id)) } else { db.dailyDao().update(record);onSaved(record) }
                 }
             },modifier=Modifier.weight(1f)){Text("حفظ")}
-            OutlinedButton(onClick={onNew},modifier=Modifier.weight(1f)){Text("سجل جديد")}
+            OutlinedButton(onClick={tap();onNew()},modifier=Modifier.weight(1f)){Text("سجل جديد")}
         }
         
         if(initial!=null) {
@@ -288,10 +291,10 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable private fun StatsScreen(db:AppDatabase,b:Bakery) {
-    val scope= rememberCoroutineScope(); var from by remember{mutableStateOf("")};var to by remember{mutableStateOf("")};var rows by remember{mutableStateOf<List<DailyRecord>?>(null)};var err by remember{mutableStateOf<String?>(null)}
+    val scope= rememberCoroutineScope(); val tap=LocalRaghifSound.current; var from by remember{mutableStateOf("")};var to by remember{mutableStateOf("")};var rows by remember{mutableStateOf<List<DailyRecord>?>(null)};var err by remember{mutableStateOf<String?>(null)}
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
         RaghifDateField("من تاريخ",from,{from=it});RaghifDateField("إلى تاريخ",to,{to=it})
-        Button(onClick={val a=runCatching{LocalDate.parse(from)}.getOrNull();val z=runCatching{LocalDate.parse(to)}.getOrNull();if(a==null||z==null||a.isAfter(z)||z.isAfter(LocalDate.now()))err="تحقق من فترة التاريخ." else scope.launch{rows=db.dailyDao().between(b.id,from,to);err=if(rows!!.isEmpty())"لا توجد سجلات في الفترة المحددة." else null}},modifier=Modifier.fillMaxWidth()){Text("بحث")}
+        Button(onClick={tap();val a=runCatching{LocalDate.parse(from)}.getOrNull();val z=runCatching{LocalDate.parse(to)}.getOrNull();if(a==null||z==null||a.isAfter(z)||z.isAfter(LocalDate.now()))err="تحقق من فترة التاريخ." else scope.launch{rows=db.dailyDao().between(b.id,from,to);err=if(rows!!.isEmpty())"لا توجد سجلات في الفترة المحددة." else null}},modifier=Modifier.fillMaxWidth()){Text("بحث")}
         err?.let{Text(it,color=MaterialTheme.colorScheme.error)}
         rows?.takeIf{it.isNotEmpty()}?.let{list->
             Stat("عدد السجلات",fmt(list.size));Stat("إجمالي كمية الدقيق",fmt(list.sumOf{it.flourKg})+" كجم")
@@ -309,6 +312,7 @@ class MainActivity : ComponentActivity() {
 
 
 @Composable private fun SearchScreen(db:AppDatabase, bakery:Bakery, onOpen:(DailyRecord)->Unit) {
+    val tap=LocalRaghifSound.current
     val all by db.dailyDao().observe(bakery.id).collectAsState(initial=emptyList())
     var query by remember(bakery.id) { mutableStateOf("") }
     var from by remember(bakery.id) { mutableStateOf("") }
@@ -330,11 +334,11 @@ class MainActivity : ComponentActivity() {
         if(!datesValid) Text("يرجى إدخال تواريخ صحيحة وبترتيب صحيح.",color=MaterialTheme.colorScheme.error)
         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
             Text("نتائج البحث: " + found.size,fontWeight=FontWeight.Bold)
-            TextButton(onClick={query="";from="";to=""}){Text("مسح البحث")}
+            TextButton(onClick={tap();query="";from="";to=""}){Text("مسح البحث")}
         }
         if(found.isEmpty() && datesValid) EmptyMessage("لا توجد سجلات مطابقة.")
         found.forEach { r ->
-            Card(Modifier.fillMaxWidth().clickable { onOpen(r) },shape=RoundedCornerShape(16.dp)) {
+            Card(Modifier.fillMaxWidth().clickable { tap();onOpen(r) },shape=RoundedCornerShape(16.dp)) {
                 Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
                     Text("السجل رقم " + r.id + " — " + prettyDate(r.date),fontWeight=FontWeight.Bold,color=brown)
                     Text("كمية الدقيق: " + fmt(r.flourKg) + " كيلو • عدد الحبات: " + fmt(r.pieces))
@@ -349,6 +353,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable private fun FinancialScreen(db:AppDatabase,b:Bakery) {
     val scope = rememberCoroutineScope()
+    val tap=LocalRaghifSound.current
     var from by remember { mutableStateOf(LocalDate.now().withDayOfMonth(1).format(dbFmt)) }
     var to by remember { mutableStateOf(today()) }
     var rows by remember { mutableStateOf<List<DailyRecord>?>(null) }
@@ -362,6 +367,7 @@ class MainActivity : ComponentActivity() {
         RaghifDateField("من تاريخ",from,{from=it;rows=null})
         RaghifDateField("إلى تاريخ",to,{to=it;rows=null})
         Button(onClick={
+            tap()
             val start = runCatching { LocalDate.parse(normalizedDigits(from)) }.getOrNull()
             val finish = runCatching { LocalDate.parse(normalizedDigits(to)) }.getOrNull()
             when {
@@ -415,7 +421,7 @@ class MainActivity : ComponentActivity() {
 @Composable private fun SettingsScreen(db:AppDatabase,night:Boolean,onNightChange:(Boolean)->Unit,sound:Boolean,onSoundChange:(Boolean)->Unit) {
     var biometric by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(10.dp)) {
-        Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("الوضع الليلي");Switch(night,onCheckedChange=onNightChange)} }
+        Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("الوضع الليلي");Switch(night,onCheckedChange={onNightChange(it)})} }
         Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("صوت النقر");Switch(sound,onCheckedChange=onSoundChange)} }
         Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("الدخول بالبصمة (واجهة إعداد أولية)");Switch(biometric,{biometric=it})} }
         BackupActions(db)
