@@ -28,6 +28,7 @@ import com.raghif.app.data.*
 import com.raghif.app.reports.RaghifPdf
 import com.raghif.app.reports.ReportActions
 import com.raghif.app.reports.ReportMath
+import com.raghif.app.reports.RecordCharts
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.time.LocalDate
@@ -259,7 +260,9 @@ class MainActivity : ComponentActivity() {
             Stat("إجمالي عدد الأقراص",fmt(list.sumOf{it.pieces}));Stat("إجمالي عشاء العمال",fmt(list.sumOf{it.workersMeal}))
             Stat("إجمالي التالف",fmt(list.sumOf{it.waste}));Stat("إجمالي المباع آجل",fmt(list.sumOf{it.creditSold}))
             Stat("إجمالي المباع نقدًا",fmt(list.sumOf{cashSold(it)}));Stat("إجمالي الإيراد",fmt(list.sumOf{it.revenue})+" ريال")
-            Stat("مجموع الفرق",fmt(list.sumOf{difference(it)}));Stat("متوسط إنتاج الكيس",if(list.sumOf{it.flourKg}==0L)"غير متاح" else fmt(list.sumOf{it.pieces}.toDouble()/list.sumOf{it.flourKg}*list.map{it.flourBagWeightUsed}.average())+" حبة/كيس")
+            Stat("مجموع الفرق",fmt(list.sumOf{difference(it)}))
+            Stat("متوسط إنتاج الكيس",ReportMath.averagePiecesPerBag(list)?.let { fmt(it)+" حبة/كيس" } ?: "غير متاح")
+            RecordCharts(list)
         }
     }
 }
