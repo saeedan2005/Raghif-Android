@@ -135,8 +135,8 @@ class MainActivity : ComponentActivity() {
             when(page) {
                 "bakeries" -> {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                        Button(onClick={clickSound();editingBakery=null;navigate("bakeryForm"), modifier=Modifier.weight(1f)) { Icon(Icons.Default.Add,null); Text("مخبز جديد") }
-                        OutlinedButton(onClick={clickSound();navigate("settings")) { Icon(Icons.Default.Settings,null); Text("الإعدادات") }
+                        Button(onClick={clickSound();editingBakery=null;navigate("bakeryForm")}, modifier=Modifier.weight(1f)) { Icon(Icons.Default.Add,null); Text("مخبز جديد") }
+                        OutlinedButton(onClick={clickSound();navigate("settings")}) { Icon(Icons.Default.Settings,null); Text("الإعدادات") }
                     }
                     if (bakeries.isEmpty()) EmptyMessage("لا توجد مخابز مضافة. أضف مخبزًا للبدء.")
                     LazyColumn(verticalArrangement=Arrangement.spacedBy(8.dp)) {
@@ -144,7 +144,7 @@ class MainActivity : ComponentActivity() {
                             Card(Modifier.fillMaxWidth().clickable { clickSound(); selected=b; currentRecord=null; navigate("daily") }, shape=RoundedCornerShape(18.dp)) {
                                 Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment=Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) { Text(b.name, fontWeight=FontWeight.Bold, fontSize=18.sp); Text("رقم المخبز: ${b.number}", color=Color.Gray); Text("إعدادات البيع: ${fmt(b.unitRevenue)} ريال / ${fmt(b.piecesPerBag)} حبات", fontSize=12.sp) }
-                                    IconButton(onClick={clickSound();editingBakery=b;navigate("bakeryForm")) { Icon(Icons.Default.Edit,null) }
+                                    IconButton(onClick={clickSound();editingBakery=b;navigate("bakeryForm")}) { Icon(Icons.Default.Edit,null) }
                                     IconButton(onClick={scope.launch { if(db.dailyDao().all(b.id).isNotEmpty()) message="لا يمكن حذف مخبز يحتوي على سجلات يومية في هذه النسخة التجريبية." else { db.bakeryDao().delete(b); message="تم حذف المخبز." } }}) { Icon(Icons.Default.Delete,null,tint=Color.Red) }
                                 }
                             }
@@ -164,10 +164,7 @@ class MainActivity : ComponentActivity() {
                     }
                 })
                 "daily" -> selected?.let { b ->
-                    DailyScreen(db,b,currentRecord,onChoose={currentRecord=it},onNew={currentRecord=null},onSaved={currentRecord=it;message="تم حفظ السجل اليومي.";},onStats={clickSound();navigate("stats")},onFinancial={clickSound();navigate("financial")},onSearch={clickSound();navigate("search")},onShare={record ->
-                        clickSound()
-                        // PDF actions are offered below the saved record.
-                    },message={message=it})
+                    DailyScreen(db,b,currentRecord,onChoose={currentRecord=it},onNew={currentRecord=null},onSaved={currentRecord=it;message="تم حفظ السجل اليومي.";},onStats={clickSound();navigate("stats")},onFinancial={clickSound();navigate("financial")},onSearch={clickSound();navigate("search")},onShare={_ -> clickSound()},message={message=it})
                 }
                 "stats" -> selected?.let { StatsScreen(db,it) }
                 "financial" -> selected?.let { FinancialScreen(db,it) }
@@ -237,7 +234,7 @@ class MainActivity : ComponentActivity() {
         }
         OutlinedButton(onClick=onFinancial,modifier=Modifier.fillMaxWidth()){Icon(Icons.Default.ReceiptLong,null);Text("التقرير المالي")}
         OutlinedButton(onClick=onSearch,modifier=Modifier.fillMaxWidth()){Icon(Icons.Default.Search,null);Text("البحث في السجلات")}
-        Field("التاريخ (YYYY-MM-DD)",date,{date=it})
+        RaghifDateField("التاريخ",date,{date=it})
         Text("اليوم: ${dayName(date)}",color=brown,fontWeight=FontWeight.Bold)
         Field("المالحظة",note,{note=it},singleLine=false)
         Field("كمية الدقيق (كجم)",flour,{flour=it},true); Field("عدد الأقراص",pieces,{pieces=it},true)
@@ -263,7 +260,7 @@ class MainActivity : ComponentActivity() {
             },modifier=Modifier.weight(1f)){Text("حفظ")}
             OutlinedButton(onClick={onNew},modifier=Modifier.weight(1f)){Text("سجل جديد")}
         }
-        if(initial!=null) Button(onClick={onShare(initial.copy(note=note))},modifier=Modifier.fillMaxWidth()){Icon(Icons.Default.Share,null);Text("مشاركة السجل المحفوظ")}
+        
         if(initial!=null) {
             Text("تقرير PDF للسجل المحفوظ", fontWeight=FontWeight.Bold, color=brown)
             ReportActions(
@@ -279,7 +276,7 @@ class MainActivity : ComponentActivity() {
 @Composable private fun StatsScreen(db:AppDatabase,b:Bakery) {
     val scope= rememberCoroutineScope(); var from by remember{mutableStateOf("")};var to by remember{mutableStateOf("")};var rows by remember{mutableStateOf<List<DailyRecord>?>(null)};var err by remember{mutableStateOf<String?>(null)}
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-        Field("من تاريخ (YYYY-MM-DD)",from,{from=it});Field("إلى تاريخ (YYYY-MM-DD)",to,{to=it})
+        RaghifDateField("من تاريخ",from,{from=it});RaghifDateField("إلى تاريخ",to,{to=it})
         Button(onClick={val a=runCatching{LocalDate.parse(from)}.getOrNull();val z=runCatching{LocalDate.parse(to)}.getOrNull();if(a==null||z==null||a.isAfter(z)||z.isAfter(LocalDate.now()))err="تحقق من فترة التاريخ." else scope.launch{rows=db.dailyDao().between(b.id,from,to);err=if(rows!!.isEmpty())"لا توجد سجلات في الفترة المحددة." else null}},modifier=Modifier.fillMaxWidth()){Text("بحث")}
         err?.let{Text(it,color=MaterialTheme.colorScheme.error)}
         rows?.takeIf{it.isNotEmpty()}?.let{list->
@@ -348,8 +345,8 @@ class MainActivity : ComponentActivity() {
     ) {
         Text("التقرير المالي — " + b.name, fontWeight=FontWeight.Bold, color=brown, fontSize=20.sp)
         Text("التقرير خاص بالمخبز المحدد فقط. المباع آجل يُحسب بالريال من عدد الحبات وسعر الكيس المثبت في السجل.", fontSize=12.sp, color=Color.Gray)
-        Field("من تاريخ (YYYY-MM-DD)",from,{from=it;rows=null})
-        Field("إلى تاريخ (YYYY-MM-DD)",to,{to=it;rows=null})
+        RaghifDateField("من تاريخ",from,{from=it;rows=null})
+        RaghifDateField("إلى تاريخ",to,{to=it;rows=null})
         Button(onClick={
             val start = runCatching { LocalDate.parse(normalizedDigits(from)) }.getOrNull()
             val finish = runCatching { LocalDate.parse(normalizedDigits(to)) }.getOrNull()
