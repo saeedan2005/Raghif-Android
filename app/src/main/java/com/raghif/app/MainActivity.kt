@@ -45,8 +45,8 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
-private val brown = Color(0xFFA65B35)
-private val cream = Color(0xFFFFF8F1)
+private val brown = Color(0xFF8B3906)
+private val cream = Color(0xFFFFF6E8)
 private val ar = Locale("ar")
 private val dbFmt = DateTimeFormatter.ISO_LOCAL_DATE
 private val uiFmt = DateTimeFormatter.ofPattern("dd/MM/yyyy")
@@ -155,9 +155,21 @@ class MainActivity : ComponentActivity() {
                     if (bakeries.isEmpty()) EmptyMessage("لا توجد مخابز مضافة. أضف مخبزًا للبدء.")
                     LazyColumn(verticalArrangement=Arrangement.spacedBy(8.dp)) {
                         items(bakeries, key={it.id}) { b ->
-                            Card(Modifier.fillMaxWidth().clickable { clickSound(); selected=b; currentRecord=null; navigate("daily") }, shape=RoundedCornerShape(18.dp)) {
+                            Card(
+                                Modifier.fillMaxWidth().clickable { clickSound(); selected=b; currentRecord=null; navigate("daily") },
+                                shape=RoundedCornerShape(18.dp),
+                                border=BorderStroke(1.dp,RaghifPalette.Golden),
+                                colors=CardDefaults.cardColors(containerColor=if(night) MaterialTheme.colorScheme.surface else RaghifPalette.Paper)
+                            ) {
                                 Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment=Alignment.CenterVertically) {
-                                    Column(Modifier.weight(1f)) { Text(b.name, fontWeight=FontWeight.Bold, fontSize=18.sp); Text("رقم المخبز: ${b.number}", color=Color.Gray); Text("إعدادات البيع: ${fmt(b.unitRevenue)} ريال / ${fmt(b.piecesPerBag)} حبات", fontSize=12.sp) }
+                                    Icon(Icons.Default.Storefront,null,tint=RaghifPalette.Orange,modifier=Modifier.size(42.dp))
+                                    Spacer(Modifier.width(10.dp))
+                                    Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(4.dp)) {
+                                        Text(b.name, fontWeight=FontWeight.ExtraBold, fontSize=20.sp)
+                                        Text(if(b.address.isBlank()) "المخبز رقم: ${b.number}" else b.address, fontSize=13.sp)
+                                        if(b.phone.isNotBlank()) Text("هاتف: ${b.phone}",fontSize=12.sp)
+                                        Text("فتح بيانات المخبز",color=RaghifPalette.Brown,fontSize=13.sp,fontWeight=FontWeight.Bold)
+                                    }
                                     IconButton(onClick={clickSound();editingBakery=b;navigate("bakeryForm")}) { Icon(Icons.Default.Edit,null) }
                                     IconButton(onClick={scope.launch { if(db.dailyDao().all(b.id).isNotEmpty()) message="لا يمكن حذف مخبز يحتوي على سجلات يومية في هذه النسخة التجريبية." else { db.bakeryDao().delete(b); message="تم حذف المخبز." } }}) { Icon(Icons.Default.Delete,null,tint=Color.Red) }
                                 }
