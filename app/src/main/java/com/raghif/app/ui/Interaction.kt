@@ -30,10 +30,12 @@ fun RaghifDateField(
     allowFuture: Boolean = false
 ) {
     val context = LocalContext.current
+    val clickSound = LocalRaghifSound.current
     val selected = runCatching { LocalDate.parse(date) }.getOrDefault(LocalDate.now())
     val display = selected.format(DateTimeFormatter.ofPattern("yyyy/MM/dd"))
     OutlinedButton(
         onClick = {
+            clickSound()
             val dialog = DatePickerDialog(
                 context,
                 { _, year, month, day ->
