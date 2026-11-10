@@ -445,14 +445,16 @@ class MainActivity : ComponentActivity() {
 @Composable private fun SettingsScreen(db:AppDatabase,night:Boolean,onNightChange:(Boolean)->Unit) {
     val context=LocalContext.current
     val prefs=remember { context.getSharedPreferences("raghif_settings",android.content.Context.MODE_PRIVATE) }
-    var sound by remember { mutableStateOf(prefs.getBoolean("click_sound",true)) }; var biometric by remember { mutableStateOf(false) }
+    var sound by remember { mutableStateOf(prefs.getBoolean("click_sound",true)) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(10.dp)) {
         com.raghif.app.ui.RaghifSectionHeading("إعدادات التطبيق")
         Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("الوضع الليلي");Switch(night,onCheckedChange=onNightChange)} }
         Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("صوت النقر");Switch(sound,{sound=it;prefs.edit().putBoolean("click_sound",it).apply()})} }
-        Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("الدخول بالبصمة (واجهة إعداد أولية)");Switch(biometric,{biometric=it})} }
+        Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("اللغة");Text("العربية",fontWeight=FontWeight.Bold,color=MaterialTheme.colorScheme.primary)} }
+        Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("تحديث البيانات تلقائيًا");Text("مفعّل",fontWeight=FontWeight.Bold,color=MaterialTheme.colorScheme.primary)} }
         com.raghif.app.ui.RaghifSectionHeading("إدارة البيانات")
         BackupActions(db)
-        Text("رغيف — الإصدار 1.0.0\nحسابات يومية... بال تعقيد",color=Color.Gray)
+        com.raghif.app.ui.ClearAllDataAction(db)
+        Text("رغيف — الإصدار 1.0.0\nحسابات يومية... بلا تعقيد",color=Color.Gray)
     }
 }
