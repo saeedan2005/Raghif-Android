@@ -25,6 +25,9 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.room.withTransaction
 import com.raghif.app.data.*
+import com.raghif.app.reports.RaghifPdf
+import com.raghif.app.reports.ReportActions
+import com.raghif.app.reports.ReportMath
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.time.LocalDate
@@ -42,9 +45,9 @@ private fun prettyDate(s: String) = runCatching { LocalDate.parse(s).format(uiFm
 private fun fmt(n: Number): String = NumberFormat.getNumberInstance(ar).format(n)
 private fun dayName(s: String) = runCatching { LocalDate.parse(s).dayOfWeek.getDisplayName(TextStyle.FULL, ar) }.getOrDefault("")
 private fun normalizedDigits(s: String) = s.trim().map { if (it in '٠'..'٩') ('0'.code + it.code - '٠'.code).toChar() else it }.joinToString("")
-private fun cashSold(r: DailyRecord): Double = if (r.unitRevenueUsed <= 0) 0.0 else r.revenue.toDouble() / r.unitRevenueUsed * r.piecesPerBagUsed
-private fun difference(r: DailyRecord) = r.pieces.toDouble() - r.workersMeal - r.waste - r.creditSold - cashSold(r)
-private fun avgBag(r: DailyRecord): Double? = if (r.flourKg <= 0 || r.flourBagWeightUsed <= 0) null else r.pieces.toDouble() / (r.flourKg / r.flourBagWeightUsed)
+private fun cashSold(r: DailyRecord): Double = ReportMath.cashPieces(r)
+private fun difference(r: DailyRecord) = ReportMath.productionDifference(r)
+private fun avgBag(r: DailyRecord): Double? = ReportMath.averagePiecesPerFlourBag(r)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); setContent { MaterialTheme(colorScheme = lightColorScheme(primary=brown, background=cream, surface=Color.White, secondary=Color(0xFFD8A15D))) { CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) { RaghifApp() } } } }
@@ -203,6 +206,14 @@ class MainActivity : ComponentActivity() {
             OutlinedButton(onClick={onNew},modifier=Modifier.weight(1f)){Text("سجل جديد")}
         }
         if(initial!=null) Button(onClick={onShare(initial.copy(note=note))},modifier=Modifier.fillMaxWidth()){Icon(Icons.Default.Share,null);Text("مشاركة السجل المحفوظ")}
+        if(initial!=null) {
+            Text("تقرير PDF للسجل المحفوظ", fontWeight=FontWeight.Bold, color=brown)
+            ReportActions(
+                fileName="raghif_daily_" + bakery.id + "_" + initial.date,
+                enabled=true,
+                createPdf={ RaghifPdf.daily(bakery, initial) }
+            )
+        }
     }
     if(showHistory) AlertDialog(onDismissRequest={showHistory=false},title={Text("السجلات السابقة")},text={Column(Modifier.heightIn(max=400.dp).verticalScroll(rememberScrollState())){history.forEach { r -> TextButton(onClick={showHistory=false;onChoose(r)}){Text("${prettyDate(r.date)} — الإيراد ${fmt(r.revenue)} ريال")} } }},confirmButton={TextButton(onClick={showHistory=false}){Text("إغلاق")}})
 }
@@ -226,60 +237,65 @@ class MainActivity : ComponentActivity() {
 @Composable private fun Stat(label:String,value:String){Card(Modifier.fillMaxWidth()){Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text(label);Text(value,fontWeight=FontWeight.Bold,color=brown)}}}
 
 @Composable private fun FinancialScreen(db:AppDatabase,b:Bakery) {
-    val scope= rememberCoroutineScope()
-    var from by remember{mutableStateOf("")}
-    var to by remember{mutableStateOf("")}
-    var rows by remember{mutableStateOf<List<DailyRecord>?>(null)}
-    var err by remember{mutableStateOf<String?>(null)}
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-        Text("التقرير المالي — ${b.name}",fontWeight=FontWeight.Bold,color=brown,fontSize=18.sp)
-        Field("من تاريخ (YYYY-MM-DD)",from,{from=it})
-        Field("إلى تاريخ (YYYY-MM-DD)",to,{to=it})
+    val scope = rememberCoroutineScope()
+    var from by remember { mutableStateOf(LocalDate.now().withDayOfMonth(1).format(dbFmt)) }
+    var to by remember { mutableStateOf(today()) }
+    var rows by remember { mutableStateOf<List<DailyRecord>?>(null) }
+    var err by remember { mutableStateOf<String?>(null) }
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Text("التقرير المالي — " + b.name, fontWeight=FontWeight.Bold, color=brown, fontSize=20.sp)
+        Text("التقرير خاص بالمخبز المحدد فقط. المباع آجل يُحسب بالريال من عدد الحبات وسعر الكيس المثبت في السجل.", fontSize=12.sp, color=Color.Gray)
+        Field("من تاريخ (YYYY-MM-DD)",from,{from=it;rows=null})
+        Field("إلى تاريخ (YYYY-MM-DD)",to,{to=it;rows=null})
         Button(onClick={
-            val a=runCatching{LocalDate.parse(from)}.getOrNull()
-            val z=runCatching{LocalDate.parse(to)}.getOrNull()
+            val start = runCatching { LocalDate.parse(normalizedDigits(from)) }.getOrNull()
+            val finish = runCatching { LocalDate.parse(normalizedDigits(to)) }.getOrNull()
             when {
-                a==null || z==null -> err="يرجى تحديد تاريخ البداية والنهاية بصيغة YYYY-MM-DD."
-                a.isAfter(z) -> err="تاريخ البداية يجب ألا يتجاوز تاريخ النهاية."
-                z.isAfter(LocalDate.now()) -> err="لا يمكن اختيار تاريخ مستقبلي."
-                java.time.temporal.ChronoUnit.DAYS.between(a,z)+1 > 10 -> err="يجب ألا تتجاوز فترة التقرير 10 أيام."
+                start==null || finish==null -> err="يرجى تحديد تاريخ البداية والنهاية بصيغة YYYY-MM-DD."
+                start.isAfter(finish) -> err="تاريخ البداية يجب ألا يتجاوز تاريخ النهاية."
+                finish.isAfter(LocalDate.now()) -> err="لا يمكن اختيار تاريخ مستقبلي."
                 else -> scope.launch {
-                    rows=db.dailyDao().between(b.id,from,to)
+                    val startKey=start.format(dbFmt)
+                    val endKey=finish.format(dbFmt)
+                    rows=db.dailyDao().between(b.id,startKey,endKey)
                     err=if(rows!!.isEmpty()) "لا توجد سجلات في الفترة المحددة." else null
                 }
             }
-        },modifier=Modifier.fillMaxWidth()){Text("بحث")}
-        err?.let{Text(it,color=MaterialTheme.colorScheme.error)}
-        rows?.takeIf{it.isNotEmpty()}?.let{list->
-            val start=LocalDate.parse(from)
-            val end=LocalDate.parse(to)
-            val days=(0L..java.time.temporal.ChronoUnit.DAYS.between(start,end)).map{start.plusDays(it)}
-            val byDate=list.associateBy{it.date}
-            Text("الفترة: ${prettyDate(from)} — ${prettyDate(to)}",fontWeight=FontWeight.SemiBold)
-            Text("مرّر الجدول أفقيًا لرؤية جميع الأيام والإجمالي.",color=Color.Gray,fontSize=12.sp)
-            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
-                Column {
-                    Row {
-                        TableCell("البند",110.dp,true)
-                        days.forEach { d -> TableCell("${d.dayOfMonth}/${d.monthValue}\n${d.dayOfWeek.getDisplayName(TextStyle.SHORT,ar)}",88.dp,true) }
-                        TableCell("الإجمالي",105.dp,true)
-                    }
-                    Row {
-                        TableCell("الإيراد",110.dp,true)
-                        days.forEach { d -> TableCell(byDate[d.format(dbFmt)]?.let{fmt(it.revenue)} ?: "—",88.dp) }
-                        TableCell(fmt(list.sumOf{it.revenue}),105.dp,true)
-                    }
-                    Row {
-                        TableCell("المباع آجل",110.dp,true)
-                        days.forEach { d -> TableCell(byDate[d.format(dbFmt)]?.let{fmt(it.creditSold)} ?: "—",88.dp) }
-                        TableCell(fmt(list.sumOf{it.creditSold}),105.dp,true)
+        }, modifier=Modifier.fillMaxWidth()) { Text("عرض التقرير") }
+        err?.let { Text(it,color=MaterialTheme.colorScheme.error) }
+        rows?.takeIf { it.isNotEmpty() }?.let { list ->
+            val totalRevenue = list.sumOf { it.revenue.toDouble() }
+            val totalCredit = list.sumOf { ReportMath.deferredValue(it) }
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
+                    Text("إجمالي الإيراد: " + fmt(totalRevenue) + " ريال",fontWeight=FontWeight.Bold)
+                    Text("إجمالي المباع آجل: " + fmt(totalCredit) + " ريال",fontWeight=FontWeight.Bold)
+                    Text("إجمالي المبيعات: " + fmt(totalRevenue+totalCredit) + " ريال",fontWeight=FontWeight.Bold,color=brown)
+                }
+            }
+            list.forEach { r ->
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
+                        Text(prettyDate(r.date),fontWeight=FontWeight.Bold,color=brown)
+                        Text("الإيراد: " + fmt(r.revenue) + " ريال")
+                        Text("المباع آجل: " + fmt(ReportMath.deferredValue(r)) + " ريال")
+                        Text("الإجمالي: " + fmt(ReportMath.totalValue(r)) + " ريال",fontWeight=FontWeight.SemiBold)
                     }
                 }
             }
-            Text("يحتوي التقرير على بندي الإيراد والمباع آجل فقط.",color=Color.Gray,fontSize=12.sp)
+            Text("الحساب: عدد الحبات المباعة آجلًا ÷ عدد الحبات في الكيس × قيمة الكيس.",fontSize=12.sp,color=Color.Gray)
+            ReportActions(
+                fileName="raghif_financial_" + b.id + "_" + normalizedDigits(from) + "_" + normalizedDigits(to),
+                enabled=true,
+                createPdf={ RaghifPdf.financial(b,list,normalizedDigits(from),normalizedDigits(to)) }
+            )
         }
     }
 }
+
 @Composable private fun TableCell(value:String,width:Dp,bold:Boolean=false) {
     Box(Modifier.width(width).border(1.dp,Color(0xFFD9C8B9)).background(if(bold) Color(0xFFFFE8D3) else Color.White).padding(8.dp),contentAlignment=Alignment.Center) {
         Text(value,fontWeight=if(bold) FontWeight.Bold else FontWeight.Normal,fontSize=12.sp)
