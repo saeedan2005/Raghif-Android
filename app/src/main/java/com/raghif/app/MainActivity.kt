@@ -1,9 +1,11 @@
 package com.raghif.app
 
 import android.content.Intent
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -11,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
@@ -29,6 +32,9 @@ import com.raghif.app.reports.RaghifPdf
 import com.raghif.app.reports.ReportActions
 import com.raghif.app.reports.ReportMath
 import com.raghif.app.reports.RecordCharts
+import com.raghif.app.ui.RaghifDateField
+import com.raghif.app.ui.LocalRaghifSound
+import com.raghif.app.ui.playRaghifClick
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.time.LocalDate
@@ -95,51 +101,57 @@ class MainActivity : ComponentActivity() {
     val scope = rememberCoroutineScope()
     val bakeries by db.bakeryDao().observeAll().collectAsState(initial=emptyList())
     var selected by remember { mutableStateOf<Bakery?>(null) }
-    var page by remember { mutableStateOf("welcome") }
+    var page by remember { mutableStateOf("bakeries") }
+    val navigationHistory = remember { mutableStateListOf<String>() }
+    var confirmExit by remember { mutableStateOf(false) }
+    fun navigate(target: String) {
+        if (target != page) { navigationHistory.add(page); page = target }
+    }
+    fun goBack() {
+        if (navigationHistory.isNotEmpty()) {
+            page = navigationHistory.removeAt(navigationHistory.lastIndex)
+        } else {
+            page = "bakeries"
+            confirmExit = true
+        }
+    }
+    BackHandler(enabled=true) { goBack() }
+    val clickContext = LocalContext.current
+    val soundSettings = remember { clickContext.getSharedPreferences("raghif_settings", Context.MODE_PRIVATE) }
+    var soundEnabled by remember { mutableStateOf(soundSettings.getBoolean("sound", true)) }
+    val clickSound: () -> Unit = {
+        if (soundEnabled) playRaghifClick(clickContext)
+    }
     var message by remember { mutableStateOf<String?>(null) }
     var editingBakery by remember { mutableStateOf<Bakery?>(null) }
     var currentRecord by remember { mutableStateOf<DailyRecord?>(null) }
     var reportRows by remember { mutableStateOf<List<DailyRecord>>(emptyList()) }
 
+    CompositionLocalProvider(LocalRaghifSound provides clickSound) {
     Scaffold(containerColor=MaterialTheme.colorScheme.background, topBar={
-        TopAppBarRaghif(title=when(page) { "welcome"->"رغيف"; "bakeries"->"قائمة المخابز"; "bakeryForm"->if(editingBakery==null) "إنشاء مخبز جديد" else "تعديل المخبز"; "daily"->selected?.name ?: "البيانات اليومية"; "stats"->"الإحصاءات"; "financial"->"التقرير المالي"; "search"->"البحث في السجلات"; "settings"->"الإعدادات"; else->"رغيف" }, onBack={ page=when(page){"bakeries"->"welcome";"daily","settings"->"bakeries";"stats","financial","search"->"daily";"bakeryForm"->"bakeries";else->"welcome"} })
+        TopAppBarRaghif(title=when(page) { "bakeries"->"قائمة المخابز"; "bakeryForm"->if(editingBakery==null) "إنشاء مخبز جديد" else "تعديل المخبز"; "daily"->selected?.name ?: "البيانات اليومية"; "stats"->"الإحصاءات"; "financial"->"التقرير المالي"; "search"->"البحث في السجلات"; "settings"->"الإعدادات"; else->"رغيف" }, onBack={clickSound(); goBack()}, showBack=page!="bakeries")
     }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement=Arrangement.spacedBy(12.dp)) {
             when(page) {
-                "welcome" -> {
-                    Spacer(Modifier.height(28.dp))
-                    Box(Modifier.fillMaxWidth(), contentAlignment=Alignment.Center) {
-                        Column(horizontalAlignment=Alignment.CenterHorizontally) {
-                            Box(Modifier.size(104.dp).background(Color(0xFFF7C77A), RoundedCornerShape(30.dp)), contentAlignment=Alignment.Center) { Icon(Icons.Default.BakeryDining, null, tint=brown, modifier=Modifier.size(68.dp)) }
-                            Spacer(Modifier.height(12.dp)); Text("رغيف", style=MaterialTheme.typography.headlineLarge, fontWeight=FontWeight.Bold, color=brown)
-                            Text("حسابات يومية... بال تعقيد", color=Color(0xFF745747))
-                        }
-                    }
-                    Spacer(Modifier.height(24.dp))
-                    BigButton("تسجيل الدخول", Icons.Default.Login) { page="bakeries" }
-                    BigButton("إنشاء مخبز جديد", Icons.Default.AddBusiness) { editingBakery=null; page="bakeryForm" }
-                    Spacer(Modifier.weight(1f))
-                    Text("تعمل البيانات محليًا على هذا الجهاز", modifier=Modifier.align(Alignment.CenterHorizontally), color=Color.Gray)
-                }
                 "bakeries" -> {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                        Button(onClick={editingBakery=null;page="bakeryForm"}, modifier=Modifier.weight(1f)) { Icon(Icons.Default.Add,null); Text("مخبز جديد") }
-                        OutlinedButton(onClick={page="settings"}) { Icon(Icons.Default.Settings,null); Text("الإعدادات") }
+                        Button(onClick={clickSound();editingBakery=null;navigate("bakeryForm"), modifier=Modifier.weight(1f)) { Icon(Icons.Default.Add,null); Text("مخبز جديد") }
+                        OutlinedButton(onClick={clickSound();navigate("settings")) { Icon(Icons.Default.Settings,null); Text("الإعدادات") }
                     }
                     if (bakeries.isEmpty()) EmptyMessage("لا توجد مخابز مضافة. أضف مخبزًا للبدء.")
                     LazyColumn(verticalArrangement=Arrangement.spacedBy(8.dp)) {
                         items(bakeries, key={it.id}) { b ->
-                            Card(Modifier.fillMaxWidth().clickable { selected=b; currentRecord=null; page="daily" }, shape=RoundedCornerShape(18.dp)) {
+                            Card(Modifier.fillMaxWidth().clickable { clickSound(); selected=b; currentRecord=null; navigate("daily") }, shape=RoundedCornerShape(18.dp)) {
                                 Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment=Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) { Text(b.name, fontWeight=FontWeight.Bold, fontSize=18.sp); Text("رقم المخبز: ${b.number}", color=Color.Gray); Text("إعدادات البيع: ${fmt(b.unitRevenue)} ريال / ${fmt(b.piecesPerBag)} حبات", fontSize=12.sp) }
-                                    IconButton(onClick={editingBakery=b;page="bakeryForm"}) { Icon(Icons.Default.Edit,null) }
+                                    IconButton(onClick={clickSound();editingBakery=b;navigate("bakeryForm")) { Icon(Icons.Default.Edit,null) }
                                     IconButton(onClick={scope.launch { if(db.dailyDao().all(b.id).isNotEmpty()) message="لا يمكن حذف مخبز يحتوي على سجلات يومية في هذه النسخة التجريبية." else { db.bakeryDao().delete(b); message="تم حذف المخبز." } }}) { Icon(Icons.Default.Delete,null,tint=Color.Red) }
                                 }
                             }
                         }
                     }
                 }
-                "bakeryForm" -> BakeryForm(editingBakery, onCancel={page="bakeries"}, onSave={b ->
+                "bakeryForm" -> BakeryForm(editingBakery, onCancel={goBack()}, onSave={b ->
                     scope.launch {
                         val old=editingBakery
                         val duplicateNum=db.bakeryDao().numberExists(normalizedDigits(b.number), old?.id ?: 0L)>0
@@ -147,30 +159,37 @@ class MainActivity : ComponentActivity() {
                         if(duplicateNum || duplicateName) message="رقم المخبز أو اسمه مستخدم مسبقًا."
                         else {
                             if(old==null) db.bakeryDao().insert(b) else db.bakeryDao().update(b.copy(id=old.id,createdAt=old.createdAt))
-                            page="bakeries"; message="تم حفظ بيانات المخبز."
+                            goBack(); message="تم حفظ بيانات المخبز."
                         }
                     }
                 })
                 "daily" -> selected?.let { b ->
-                    DailyScreen(db,b,currentRecord,onChoose={currentRecord=it},onNew={currentRecord=null},onSaved={currentRecord=it;message="تم حفظ السجل اليومي.";},onStats={page="stats"},onFinancial={page="financial"},onSearch={page="search"},onShare={record ->
-                        val share = "رغيف | ${b.name}\nالتاريخ: ${prettyDate(record.date)}\nاليوم: ${dayName(record.date)}\nالملاحظة: ${record.note}\nكمية الدقيق: ${fmt(record.flourKg)} كجم\nعدد الأقراص: ${fmt(record.pieces)}\nعشاء العمال: ${fmt(record.workersMeal)}\nالتالف: ${fmt(record.waste)}\nالمباع آجل: ${fmt(record.creditSold)}\nالإيراد: ${fmt(record.revenue)} ريال\nالمباع نقدًا: ${fmt(cashSold(record))}\nالفرق: ${fmt(difference(record))}"
-                        val intent=Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT,share)
-                        context.startActivity(Intent.createChooser(intent,"مشاركة السجل"))
+                    DailyScreen(db,b,currentRecord,onChoose={currentRecord=it},onNew={currentRecord=null},onSaved={currentRecord=it;message="تم حفظ السجل اليومي.";},onStats={clickSound();navigate("stats")},onFinancial={clickSound();navigate("financial")},onSearch={clickSound();navigate("search")},onShare={record ->
+                        clickSound()
+                        // PDF actions are offered below the saved record.
                     },message={message=it})
                 }
                 "stats" -> selected?.let { StatsScreen(db,it) }
                 "financial" -> selected?.let { FinancialScreen(db,it) }
-                "search" -> selected?.let { b -> SearchScreen(db,b,onOpen={record -> currentRecord=record;page="daily"}) }
-                "settings" -> SettingsScreen(db,night,onNightChange)
+                "search" -> selected?.let { b -> SearchScreen(db,b,onOpen={record -> currentRecord=record;navigate("daily")}) }
+                "settings" -> SettingsScreen(db,night,onNightChange,soundEnabled,{ soundEnabled=it; soundSettings.edit().putBoolean("sound",it).apply();if(it)playRaghifClick(clickContext) })
             }
         }
+    }
+    if(confirmExit) AlertDialog(
+        onDismissRequest={confirmExit=false},
+        title={Text("الخروج من رغيف")},
+        text={Text("هل أنت متأكد من الخروج من التطبيق؟")},
+        confirmButton={TextButton(onClick={confirmExit=false;(context as? android.app.Activity)?.finish()}) { Text("خروج") }},
+        dismissButton={TextButton(onClick={confirmExit=false}) { Text("إلغاء") }}
+    )
     }
     if(message!=null) AlertDialog(onDismissRequest={message=null}, confirmButton={TextButton(onClick={message=null}){Text("موافق")} }, title={Text("رغيف")}, text={Text(message.orEmpty())})
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable private fun TopAppBarRaghif(title:String,onBack:()->Unit) {
-    TopAppBar(title={Text(title,fontWeight=FontWeight.Bold)}, navigationIcon={ IconButton(onClick=onBack){Icon(Icons.Default.ArrowBack,null)} }, colors=TopAppBarDefaults.topAppBarColors(containerColor=MaterialTheme.colorScheme.background))
+@Composable private fun TopAppBarRaghif(title:String,onBack:()->Unit,showBack:Boolean=true) {
+    TopAppBar(title={Text(title,fontWeight=FontWeight.Bold)}, navigationIcon={ if(showBack) IconButton(onClick=onBack){Icon(Icons.AutoMirrored.Filled.ArrowBack,"رجوع")} }, colors=TopAppBarDefaults.topAppBarColors(containerColor=MaterialTheme.colorScheme.background))
 }
 @Composable private fun BigButton(label:String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick:()->Unit) { Button(onClick=onClick, modifier=Modifier.fillMaxWidth().height(58.dp), shape=RoundedCornerShape(16.dp)) { Icon(icon,null); Spacer(Modifier.width(8.dp)); Text(label,fontSize=17.sp) } }
 @Composable private fun EmptyMessage(text:String) { Card(Modifier.fillMaxWidth()) { Text(text,Modifier.padding(16.dp),color=Color.Gray) } }
@@ -382,11 +401,11 @@ class MainActivity : ComponentActivity() {
         Text(value,fontWeight=if(bold) FontWeight.Bold else FontWeight.Normal,fontSize=12.sp)
     }
 }
-@Composable private fun SettingsScreen(db:AppDatabase,night:Boolean,onNightChange:(Boolean)->Unit) {
-    var sound by remember { mutableStateOf(true) }; var biometric by remember { mutableStateOf(false) }
+@Composable private fun SettingsScreen(db:AppDatabase,night:Boolean,onNightChange:(Boolean)->Unit,sound:Boolean,onSoundChange:(Boolean)->Unit) {
+    var biometric by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(10.dp)) {
         Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("الوضع الليلي");Switch(night,onCheckedChange=onNightChange)} }
-        Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("صوت النقر");Switch(sound,{sound=it})} }
+        Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("صوت النقر");Switch(sound,onCheckedChange=onSoundChange)} }
         Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("الدخول بالبصمة (واجهة إعداد أولية)");Switch(biometric,{biometric=it})} }
         BackupActions(db)
         Text("رغيف — الإصدار 1.0.0\nحسابات يومية... بال تعقيد",color=Color.Gray)
