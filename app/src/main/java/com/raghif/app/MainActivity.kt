@@ -316,7 +316,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable private fun StatsScreen(db:AppDatabase,b:Bakery) {
-    val scope= rememberCoroutineScope(); var from by remember{mutableStateOf("")};var to by remember{mutableStateOf("")};var rows by remember{mutableStateOf<List<DailyRecord>?>(null)};var err by remember{mutableStateOf<String?>(null)}
+    val scope= rememberCoroutineScope(); var from by remember{mutableStateOf(LocalDate.now().withDayOfMonth(1).format(dbFmt))};var to by remember{mutableStateOf(today())};var rows by remember{mutableStateOf<List<DailyRecord>?>(null)};var err by remember{mutableStateOf<String?>(null)}
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
         com.raghif.app.ui.RaghifSectionHeading("الإحصاءات")
         CalendarDateField("من تاريخ",from,{from=it})
