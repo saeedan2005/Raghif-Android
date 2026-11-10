@@ -51,6 +51,13 @@ class CalculationTest {
         assertEquals(1083.0, ReportMath.productionDifference(record()), 0.0001)
     }
 
+    @Test fun weightedAverageUsesActualFlourBagCount() {
+        val a = record(pieces=100,flourKg=50)
+        val b = record(pieces=200,flourKg=25).copy(flourBagWeightUsed=25.0)
+        assertEquals(150.0, ReportMath.averagePiecesPerBag(listOf(a,b))!!, 0.0001)
+        assertNull(ReportMath.averagePiecesPerBag(emptyList()))
+    }
+
     @Test fun averageHandlesMissingFlourWithoutDivideByZero() {
         assertEquals(1200.0, ReportMath.averagePiecesPerFlourBag(record())!!, 0.0001)
         assertNull(ReportMath.averagePiecesPerFlourBag(record(flourKg=0)))
