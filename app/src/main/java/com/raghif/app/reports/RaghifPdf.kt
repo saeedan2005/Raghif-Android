@@ -3,6 +3,8 @@ package com.raghif.app.reports
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.LinearGradient
+import android.graphics.Shader
 import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
 import android.text.Layout
@@ -122,13 +124,19 @@ object RaghifPdf {
 
         init {
             canvas.drawColor(Color.WHITE)
-            rect(0f, 0f, PAGE_WIDTH.toFloat(), 111f, brown)
+            val header = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                shader = LinearGradient(0f, 0f, PAGE_WIDTH.toFloat(), 111f,
+                    intArrayOf(Color.rgb(100, 40, 0), Color.rgb(212, 110, 8), Color.rgb(100, 40, 0)),
+                    null, Shader.TileMode.CLAMP)
+            }
+            canvas.drawRect(0f, 0f, PAGE_WIDTH.toFloat(), 111f, header)
             rect(0f, 111f, PAGE_WIDTH.toFloat(), 119f, gold)
-            text("رغيف | إدارة البيانات اليومية للمخابز", LEFT, 17f, PAGE_WIDTH - 2f * LEFT, 17f, Color.WHITE, center = true, bold = true)
-            text(title, LEFT, 50f, PAGE_WIDTH - 2f * LEFT, 26f, Color.WHITE, center = true, bold = true)
+            text("رغيف", LEFT, 8f, PAGE_WIDTH - 2f * LEFT, 32f, Color.WHITE, center = true, bold = true)
+            text("إدارة البيانات اليومية للمخابز", LEFT, 42f, PAGE_WIDTH - 2f * LEFT, 12f, Color.rgb(255,235,188), center = true, bold = true)
+            text(title, LEFT, 66f, PAGE_WIDTH - 2f * LEFT, 22f, Color.WHITE, center = true, bold = true)
             text(bakery, LEFT, 126f, PAGE_WIDTH - 2f * LEFT, 18f, dark, center = true, bold = true)
             text(period, LEFT, 150f, PAGE_WIDTH - 2f * LEFT, 11f, dark, center = true)
-            rect(LEFT, 777f, RIGHT, 778f, gold)
+            rect(LEFT, 771f, RIGHT, 773f, gold)
             text("رغيف • تقرير صادر من التطبيق", LEFT, 788f, 400f, 10f, dark)
             text("صفحة " + number, 445f, 788f, 118f, 10f, dark, center = true)
         }
