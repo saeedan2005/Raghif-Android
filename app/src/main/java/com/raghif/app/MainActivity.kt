@@ -233,7 +233,7 @@ class MainActivity : ComponentActivity() {
             Button(onClick={
                 val dt=runCatching{LocalDate.parse(normalizedDigits(date))}.getOrNull()
                 val nums=listOf(flour,pieces,meal,waste,credit,revenue)
-                if(dt==null||dt.isAfter(LocalDate.now())||normalizedDigits(flour).toLongOrNull()==null||normalizedDigits(pieces).toLongOrNull()==null||normalizedDigits(revenue).toLongOrNull()==null||listOf(flour,pieces,revenue).any{(it.toLongOrNull()?:-1)<0}||listOf(meal,waste,credit).any{it.isNotBlank()&&(it.toLongOrNull()?:-1)<0}) { message("تحقق من التاريخ والحقول الرقمية؛ يجب أن تكون القيم أعدادًا صحيحة غير سالبة.");return@Button }
+                if(dt==null||dt.isAfter(LocalDate.now())||normalizedDigits(flour).toLongOrNull()==null||normalizedDigits(pieces).toLongOrNull()==null||normalizedDigits(revenue).toLongOrNull()==null||listOf(flour,pieces,revenue).any{(normalizedDigits(it).toLongOrNull()?:-1)<0}||listOf(meal,waste,credit).any{it.isNotBlank()&&(normalizedDigits(it).toLongOrNull()?:-1)<0}) { message("تحقق من التاريخ والحقول الرقمية؛ يجب أن تكون القيم أعدادًا صحيحة غير سالبة.");return@Button }
                 scope.launch {
                     val safeDate=dt!!.format(dbFmt)
                     val duplicate=db.dailyDao().byDate(bakery.id,safeDate)
