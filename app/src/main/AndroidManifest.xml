@@ -2,7 +2,7 @@
     <application
         android:allowBackup="false"
         android:label="رغيف"
-        android:icon="@drawable/ic_raghif"
+        android:icon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.Raghif">
         <activity
