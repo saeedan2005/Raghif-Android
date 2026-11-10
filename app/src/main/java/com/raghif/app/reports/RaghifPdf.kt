@@ -38,40 +38,8 @@ object RaghifPdf {
         minimumFractionDigits = 0
     }
 
-    fun financial(bakery: Bakery, records: List<DailyRecord>, from: String, to: String): ByteArray {
-        require(records.isNotEmpty()) { "لا توجد سجلات للتصدير" }
-        val rows = records.filter { it.bakeryId == bakery.id && it.date >= from && it.date <= to }
-            .sortedBy { it.date }
-        require(rows.isNotEmpty()) { "لا توجد سجلات لهذا المخبز في الفترة المحددة" }
-        val document = PdfDocument()
-        try {
-            var number = 1
-            var sheet = page(document, number, "التقرير المالي", bakery, "الفترة من " + formatDate(from) + " إلى " + formatDate(to))
-            sheet.financialHeader()
-            rows.forEach { record ->
-                if (sheet.y + 43f > 749f) {
-                    sheet.finish()
-                    number++
-                    sheet = page(document, number, "التقرير المالي", bakery, "تابع الفترة من " + formatDate(from) + " إلى " + formatDate(to))
-                    sheet.financialHeader()
-                }
-                sheet.financialRow(record)
-            }
-            if (sheet.y + 54f > 749f) {
-                sheet.finish()
-                number++
-                sheet = page(document, number, "التقرير المالي", bakery, "إجمالي الفترة")
-                sheet.financialHeader()
-            }
-            val revenue = rows.sumOf { it.revenue.toDouble() }
-            val deferred = rows.sumOf { ReportMath.deferredValue(it) }
-            sheet.tableRow(listOf("الإجمالي", amount(revenue), amount(deferred), amount(revenue + deferred)), true)
-            sheet.finish()
-            return bytes(document)
-        } finally {
-            document.close()
-        }
-    }
+    fun financial(bakery: Bakery, records: List<DailyRecord>, from: String, to: String): ByteArray =
+        FinancialLandscapePdf.generate(bakery,records,from,to)
 
     fun summary(
         bakery: Bakery,
