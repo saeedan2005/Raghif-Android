@@ -7,6 +7,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.raghif.app.R
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -440,13 +443,114 @@ class MainActivity : ComponentActivity() {
         Text(value,fontWeight=if(bold) FontWeight.Bold else FontWeight.Normal,fontSize=12.sp)
     }
 }
-@Composable private fun SettingsScreen(db:AppDatabase,night:Boolean,onNightChange:(Boolean)->Unit,sound:Boolean,onSoundChange:(Boolean)->Unit) {
-    var biometric by remember { mutableStateOf(false) }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(10.dp)) {
-        Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("الوضع الليلي");Switch(night,onCheckedChange={onNightChange(it)})} }
-        Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("صوت النقر");Switch(sound,onCheckedChange=onSoundChange)} }
-        Card { Row(Modifier.fillMaxWidth().padding(12.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("الدخول بالبصمة (واجهة إعداد أولية)");Switch(biometric,{biometric=it})} }
-        BackupActions(db)
-        Text("رغيف — الإصدار 1.0.0\nحسابات يومية... بال تعقيد",color=Color.Gray)
+@Composable private fun SettingsScreen(
+    db:AppDatabase,
+    night:Boolean,
+    onNightChange:(Boolean)->Unit,
+    sound:Boolean,
+    onSoundChange:(Boolean)->Unit
+) {
+    val scope=rememberCoroutineScope()
+    val tap=LocalRaghifSound.current
+    var confirmClear by remember { mutableStateOf(false) }
+    var information by remember { mutableStateOf<String?>(null) }
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+        verticalArrangement=Arrangement.spacedBy(12.dp)
+    ) {
+        RaghifSectionTitle("إعدادات التطبيق")
+        RaghifCreamPanel {
+            Column(Modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
+                    Text("☾   الوضع الليلي",fontWeight=FontWeight.Bold,color=RaghifPalette.TextBrown)
+                    Switch(night,onCheckedChange=onNightChange)
+                }
+                HorizontalDivider(color=RaghifPalette.GoldBorder.copy(alpha=.35f))
+                Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
+                    Text("🌐   اللغة",fontWeight=FontWeight.Bold,color=RaghifPalette.TextBrown)
+                    Text("العربية",color=RaghifPalette.Brown,fontWeight=FontWeight.Bold)
+                }
+                HorizontalDivider(color=RaghifPalette.GoldBorder.copy(alpha=.35f))
+                Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
+                    Column {
+                        Text("⟳   تحديث البيانات تلقائيًا",fontWeight=FontWeight.Bold,color=RaghifPalette.TextBrown)
+                        Text("تتحدث السجلات محليًا بمجرد حفظها",fontSize=11.sp,color=Color.DarkGray)
+                    }
+                    Switch(checked=true,onCheckedChange=null,enabled=false)
+                }
+                HorizontalDivider(color=RaghifPalette.GoldBorder.copy(alpha=.35f))
+                Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
+                    Text("♪   صوت النقر",fontWeight=FontWeight.Bold,color=RaghifPalette.TextBrown)
+                    Switch(sound,onCheckedChange=onSoundChange)
+                }
+            }
+        }
+        RaghifSectionTitle("إدارة البيانات")
+        RaghifCreamPanel {
+            Column(Modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(6.dp)) {
+                BackupActions(db)
+                OutlinedButton(
+                    onClick={tap();confirmClear=true},
+                    border=BorderStroke(1.5.dp,RaghifPalette.Danger),
+                    modifier=Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.DeleteForever,null,tint=RaghifPalette.Danger)
+                    Spacer(Modifier.width(8.dp))
+                    Text("مسح جميع البيانات",color=RaghifPalette.Danger,fontWeight=FontWeight.Bold)
+                }
+            }
+        }
+        RaghifSectionTitle("حول التطبيق")
+        RaghifCreamPanel {
+            Row(
+                Modifier.fillMaxWidth().padding(8.dp),
+                verticalAlignment=Alignment.CenterVertically,
+                horizontalArrangement=Arrangement.spacedBy(12.dp)
+            ) {
+                Image(
+                    painter=painterResource(R.drawable.raghif_logo_icon),
+                    contentDescription="شعار تطبيق رغيف",
+                    modifier=Modifier.size(84.dp)
+                )
+                Column(Modifier.weight(1f)) {
+                    Text("إعداد التطبيق",color=RaghifPalette.TextBrown)
+                    Text("عبدالعزيز سعيدان",fontWeight=FontWeight.Bold,color=RaghifPalette.Brown)
+                }
+                Column(horizontalAlignment=Alignment.CenterHorizontally) {
+                    Text("إصدار التطبيق",fontSize=13.sp,color=RaghifPalette.TextBrown)
+                    Text("v1.0.0",fontWeight=FontWeight.Bold,color=RaghifPalette.Brown)
+                }
+            }
+        }
+        Button(
+            onClick={tap();information="تم حفظ الإعدادات على هذا الجهاز."},
+            modifier=Modifier.fillMaxWidth().height(52.dp)
+        ) { Icon(Icons.Default.CheckCircle,null);Spacer(Modifier.width(8.dp));Text("حفظ الإعدادات",fontWeight=FontWeight.Bold) }
     }
+    if(confirmClear) AlertDialog(
+        onDismissRequest={confirmClear=false},
+        title={Text("تحذير: مسح جميع البيانات")},
+        text={Text("سيؤدي هذا الإجراء إلى حذف جميع المخابز والسجلات نهائيًا من هذا الجهاز. أنشئ نسخة احتياطية أولًا. لا يمكن التراجع عن الحذف.")},
+        confirmButton={
+            TextButton(onClick={
+                confirmClear=false
+                scope.launch {
+                    runCatching {
+                        db.withTransaction {
+                            db.dailyDao().clear()
+                            db.bakeryDao().clear()
+                        }
+                    }.onSuccess { information="تم مسح بيانات المخابز والسجلات المحلية." }
+                     .onFailure { information="فشلت عملية المسح: "+(it.localizedMessage ?: "خطأ غير معروف") }
+                }
+            }) { Text("نعم، احذف جميع البيانات",color=RaghifPalette.Danger) }
+        },
+        dismissButton={TextButton(onClick={confirmClear=false}){Text("إلغاء")}}
+    )
+    if(information!=null) AlertDialog(
+        onDismissRequest={information=null},
+        title={Text("رغيف")},
+        text={Text(information.orEmpty())},
+        confirmButton={TextButton(onClick={information=null}){Text("موافق")}}
+    )
 }
