@@ -275,13 +275,13 @@ class MainActivity : ComponentActivity() {
     val scope= rememberCoroutineScope()
     val tap=LocalRaghifSound.current
     var date by remember(initial,draftDate){mutableStateOf(initial?.date ?: draftDate)}
-    var note by remember(initial){mutableStateOf(initial?.note.orEmpty())}
-    var flour by remember(initial){mutableStateOf(initial?.flourKg?.toString().orEmpty())}
-    var pieces by remember(initial){mutableStateOf(initial?.pieces?.toString().orEmpty())}
-    var meal by remember(initial){mutableStateOf(initial?.workersMeal?.toString().orEmpty())}
-    var waste by remember(initial){mutableStateOf(initial?.waste?.toString().orEmpty())}
-    var credit by remember(initial){mutableStateOf(initial?.creditSold?.toString().orEmpty())}
-    var revenue by remember(initial){mutableStateOf(initial?.revenue?.toString().orEmpty())}
+    var note by remember(initial,draftDate){mutableStateOf(initial?.note.orEmpty())}
+    var flour by remember(initial,draftDate){mutableStateOf(initial?.flourKg?.toString().orEmpty())}
+    var pieces by remember(initial,draftDate){mutableStateOf(initial?.pieces?.toString().orEmpty())}
+    var meal by remember(initial,draftDate){mutableStateOf(initial?.workersMeal?.toString().orEmpty())}
+    var waste by remember(initial,draftDate){mutableStateOf(initial?.waste?.toString().orEmpty())}
+    var credit by remember(initial,draftDate){mutableStateOf(initial?.creditSold?.toString().orEmpty())}
+    var revenue by remember(initial,draftDate){mutableStateOf(initial?.revenue?.toString().orEmpty())}
     var history by remember { mutableStateOf<List<DailyRecord>>(emptyList()) }
     var showHistory by remember { mutableStateOf(false) }
     val f=normalizedDigits(flour).toLongOrNull()?:0; val p=normalizedDigits(pieces).toLongOrNull()?:0; val m=normalizedDigits(meal).toLongOrNull()?:0; val w=normalizedDigits(waste).toLongOrNull()?:0; val c=normalizedDigits(credit).toLongOrNull()?:0; val rev=normalizedDigits(revenue).toLongOrNull()?:0
