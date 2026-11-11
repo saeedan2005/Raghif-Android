@@ -97,3 +97,20 @@ private fun RevenueBars(values: List<Float>) {
         }
     }
 }
+
+/** Financial-only chart: shows money, never flour quantities or bread production. */
+@Composable
+fun FinancialRevenueChart(records: List<DailyRecord>) {
+    val recent=records.sortedBy { it.date }.takeLast(20)
+    if(recent.isEmpty()) return
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+            Text("الإيرادات خلال الفترة",fontWeight=FontWeight.Bold)
+            RevenueBars(recent.map { it.revenue.toFloat() })
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
+                Text(recent.first().date)
+                Text(recent.last().date)
+            }
+        }
+    }
+}
