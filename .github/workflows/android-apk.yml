@@ -3,6 +3,8 @@ name: Build Raghif Android APK
 on:
   push:
     branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
   workflow_dispatch:
 
 permissions:
@@ -42,9 +44,21 @@ jobs:
 
       - name: Install Gradle 8.9
         run: |
-          curl -fsSL https://services.gradle.org/distributions/gradle-8.9-bin.zip -o /tmp/gradle.zip
+          curl -fL --retry 5 --retry-all-errors --retry-delay 5 --connect-timeout 20 \
+            https://services.gradle.org/distributions/gradle-8.9-bin.zip -o /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d /opt
           echo "/opt/gradle-8.9/bin" >> "$GITHUB_PATH"
+
+      - name: Prepare original borderless launcher icon
+        run: |
+          python3 -m pip install --disable-pip-version-check --quiet Pillow==11.3.0
+          python3 scripts/prepare_launcher_icon.py
+
+      - name: Verify original image aspect-ratio safeguards
+        run: python3 scripts/validate_image_usage.py
+
+      - name: Verify review notes and unchanged accounting formulas
+        run: python3 scripts/validate_review_requirements.py
 
       - name: Run unit tests
         run: gradle testDebugUnitTest --stacktrace
