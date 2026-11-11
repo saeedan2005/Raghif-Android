@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- The center 60dp is inside Android's adaptive-icon safe zone.
-         Do not stretch beyond the mask or crop the user's logo. -->
-    <item
-        android:left="24dp"
-        android:right="24dp"
-        android:top="24dp"
-        android:bottom="24dp">
+    <!-- The previous 24dp insets introduced an artificial cream frame.
+         The original square icon now fills the launcher foreground.
+         Source art is square, so bitmap fill does not distort its ratio.
+         Android may still apply its standard adaptive-icon mask. -->
+    <item>
         <bitmap
             android:src="@drawable/raghif_logo_icon"
             android:gravity="fill" />
