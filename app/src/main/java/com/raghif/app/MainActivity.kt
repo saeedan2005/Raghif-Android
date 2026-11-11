@@ -157,6 +157,9 @@ class MainActivity : ComponentActivity() {
                 "settings" -> "الإعدادات"
                 else -> "رغيف"
             })
+            // Give the editable page the remaining height, after the image header
+            // and the footer. Otherwise the page can be cut off on shorter phones.
+            Column(Modifier.fillMaxWidth().weight(1f)) {
             when(page) {
                 "bakeries" -> {
                     RaghifSectionTitle("المخابز المسجلة")
@@ -212,6 +215,7 @@ class MainActivity : ComponentActivity() {
                 "export" -> selected?.let { RaghifExportScreen(db,it) }
                 "search" -> selected?.let { b -> SearchScreen(db,b,onOpen={record -> currentRecord=record;draftDate=record.date;navigate("daily")}) }
                 "settings" -> SettingsScreen(db,night,onNightChange,soundEnabled,{ soundEnabled=it; soundSettings.edit().putBoolean("sound",it).apply();if(it)playRaghifClick(clickContext) })
+            }
             }
         }
     }
