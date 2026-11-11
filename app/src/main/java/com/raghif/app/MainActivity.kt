@@ -634,7 +634,7 @@ class MainActivity : ComponentActivity() {
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         verticalArrangement=Arrangement.spacedBy(12.dp)
     ) {
-        RaghifSectionTitle("إعدادات التطبيق")
+        RaghifSectionTitle("إعدادات التطبيق",sideAligned=true)
         RaghifCreamPanel {
             Column(Modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
@@ -648,20 +648,12 @@ class MainActivity : ComponentActivity() {
                 }
                 HorizontalDivider(color=RaghifPalette.GoldBorder.copy(alpha=.35f))
                 Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
-                    Column {
-                        Text("⟳   تحديث البيانات تلقائيًا",fontWeight=FontWeight.Bold,color=RaghifPalette.TextBrown)
-                        Text("تتحدث السجلات محليًا بمجرد حفظها",fontSize=11.sp,color=Color.DarkGray)
-                    }
-                    Switch(checked=true,onCheckedChange=null,enabled=false)
-                }
-                HorizontalDivider(color=RaghifPalette.GoldBorder.copy(alpha=.35f))
-                Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
                     Text("♪   صوت النقر",fontWeight=FontWeight.Bold,color=RaghifPalette.TextBrown)
                     Switch(sound,onCheckedChange=onSoundChange)
                 }
             }
         }
-        RaghifSectionTitle("إدارة البيانات")
+        RaghifSectionTitle("إدارة البيانات",sideAligned=true)
         RaghifCreamPanel {
             Column(Modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(6.dp)) {
                 BackupActions(db)
@@ -676,7 +668,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        RaghifSectionTitle("حول التطبيق")
+        RaghifSectionTitle("حول التطبيق",sideAligned=true)
         RaghifCreamPanel {
             Row(
                 Modifier.fillMaxWidth().padding(8.dp),
@@ -691,10 +683,17 @@ class MainActivity : ComponentActivity() {
                 Column(Modifier.weight(1f)) {
                     Text("إعداد التطبيق",color=RaghifPalette.TextBrown)
                     Text("عبدالعزيز سعيدان",fontWeight=FontWeight.Bold,color=RaghifPalette.Brown)
+                    Row(verticalAlignment=Alignment.CenterVertically) {
+                        Icon(Icons.Default.Phone,null,
+                            tint=RaghifPalette.TextBrown,modifier=Modifier.size(17.dp))
+                        Spacer(Modifier.width(5.dp))
+                        Text("774527928",fontWeight=FontWeight.SemiBold,
+                            color=RaghifPalette.TextBrown)
+                    }
                 }
                 Column(horizontalAlignment=Alignment.CenterHorizontally) {
                     Text("إصدار التطبيق",fontSize=13.sp,color=RaghifPalette.TextBrown)
-                    Text("v1.0.0",fontWeight=FontWeight.Bold,color=RaghifPalette.Brown)
+                    Text("v1.0.2",fontWeight=FontWeight.Bold,color=RaghifPalette.Brown)
                 }
             }
         }
