@@ -1,5 +1,10 @@
 package com.raghif.app.reports
 
+import android.content.Context
+import android.graphics.BitmapFactory
+import android.graphics.RectF
+import android.graphics.Path
+import com.raghif.app.R
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -38,7 +43,7 @@ object RaghifPdf {
         minimumFractionDigits = 0
     }
 
-    fun financial(bakery: Bakery, records: List<DailyRecord>, from: String, to: String): ByteArray {
+    fun financial(context: Context, bakery: Bakery, records: List<DailyRecord>, from: String, to: String): ByteArray {
         require(records.isNotEmpty()) { "لا توجد سجلات للتصدير" }
         val rows = records.filter { it.bakeryId == bakery.id && it.date >= from && it.date <= to }
             .sortedBy { it.date }
@@ -46,13 +51,13 @@ object RaghifPdf {
         val document = PdfDocument()
         try {
             var number = 1
-            var sheet = page(document, number, "التقرير المالي", bakery, "الفترة من " + formatDate(from) + " إلى " + formatDate(to))
+            var sheet = page(document, context, number, "التقرير المالي", bakery, "الفترة من " + formatDate(from) + " إلى " + formatDate(to))
             sheet.financialHeader()
             rows.forEach { record ->
                 if (sheet.y + 43f > 749f) {
                     sheet.finish()
                     number++
-                    sheet = page(document, number, "التقرير المالي", bakery, "تابع الفترة من " + formatDate(from) + " إلى " + formatDate(to))
+                    sheet = page(document, context, number, "التقرير المالي", bakery, "تابع الفترة من " + formatDate(from) + " إلى " + formatDate(to))
                     sheet.financialHeader()
                 }
                 sheet.financialRow(record)
@@ -60,7 +65,7 @@ object RaghifPdf {
             if (sheet.y + 54f > 749f) {
                 sheet.finish()
                 number++
-                sheet = page(document, number, "التقرير المالي", bakery, "إجمالي الفترة")
+                sheet = page(document, context, number, "التقرير المالي", bakery, "إجمالي الفترة")
                 sheet.financialHeader()
             }
             val revenue = rows.sumOf { it.revenue.toDouble() }
@@ -73,11 +78,11 @@ object RaghifPdf {
         }
     }
 
-    fun daily(bakery: Bakery, record: DailyRecord): ByteArray {
+    fun daily(context: Context, bakery: Bakery, record: DailyRecord): ByteArray {
         require(record.bakeryId == bakery.id) { "السجل لا ينتمي إلى المخبز المحدد" }
         val document = PdfDocument()
         try {
-            val sheet = page(document, 1, "تقرير السجل اليومي", bakery, "التاريخ: " + formatDate(record.date))
+            val sheet = page(document, context, 1, "تقرير السجل اليومي", bakery, "التاريخ: " + formatDate(record.date))
             sheet.labelRow("كمية الدقيق", amount(record.flourKg) + " كيلو")
             sheet.labelRow("عدد الحبات المنتجة", amount(record.pieces) + " حبة")
             sheet.labelRow("عشاء العمال", amount(record.workersMeal) + " حبة")
@@ -106,39 +111,53 @@ object RaghifPdf {
     private fun formatDate(value: String): String =
         runCatching { LocalDate.parse(value).format(DateTimeFormatter.ofPattern("yyyy/MM/dd")) }.getOrDefault(value)
 
-    private fun page(document: PdfDocument, number: Int, title: String, bakery: Bakery, period: String): Page {
+    private fun page(document: PdfDocument, context: Context, number: Int, title: String, bakery: Bakery, period: String): Page {
         val pdfPage = document.startPage(PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, number).create())
-        return Page(document, pdfPage, number, title, bakery.name, period)
+        return Page(document, pdfPage, context, number, title, bakery.name, period)
     }
 
     private class Page(
         private val document: PdfDocument,
         private val pdfPage: PdfDocument.Page,
+        private val context: Context,
         private val number: Int,
         title: String,
         bakery: String,
         period: String
     ) {
         private val canvas: Canvas = pdfPage.canvas
-        var y = 178f
+        var y = 235f
 
         init {
-            canvas.drawColor(Color.WHITE)
-            val header = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                shader = LinearGradient(0f, 0f, PAGE_WIDTH.toFloat(), 111f,
-                    intArrayOf(Color.rgb(100, 40, 0), Color.rgb(212, 110, 8), Color.rgb(100, 40, 0)),
+            canvas.drawColor(Color.rgb(255, 247, 227))
+            // Actual cropped reference image: wheat, Arabic Raghif logo, bread and oven.
+            val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.raghif_original_header)
+            if (bitmap != null) {
+                canvas.drawBitmap(bitmap, null, RectF(0f, 0f, PAGE_WIDTH.toFloat(), 112f),
+                    Paint(Paint.ANTI_ALIAS_FLAG).apply { isFilterBitmap=true })
+                bitmap.recycle()
+            }
+            val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                shader = LinearGradient(0f, 118f, PAGE_WIDTH.toFloat(), 165f,
+                    intArrayOf(Color.rgb(113, 41, 2), Color.rgb(184, 72, 0), Color.rgb(113, 41, 2)),
                     null, Shader.TileMode.CLAMP)
             }
-            canvas.drawRect(0f, 0f, PAGE_WIDTH.toFloat(), 111f, header)
-            rect(0f, 111f, PAGE_WIDTH.toFloat(), 119f, gold)
-            text("رغيف", LEFT, 8f, PAGE_WIDTH - 2f * LEFT, 32f, Color.WHITE, center = true, bold = true)
-            text("إدارة البيانات اليومية للمخابز", LEFT, 42f, PAGE_WIDTH - 2f * LEFT, 12f, Color.rgb(255,235,188), center = true, bold = true)
-            text(title, LEFT, 66f, PAGE_WIDTH - 2f * LEFT, 22f, Color.WHITE, center = true, bold = true)
-            text(bakery, LEFT, 126f, PAGE_WIDTH - 2f * LEFT, 18f, dark, center = true, bold = true)
-            text(period, LEFT, 150f, PAGE_WIDTH - 2f * LEFT, 11f, dark, center = true)
-            rect(LEFT, 771f, RIGHT, 773f, gold)
-            text("رغيف • تقرير صادر من التطبيق", LEFT, 788f, 400f, 10f, dark)
-            text("صفحة " + number, 445f, 788f, 118f, 10f, dark, center = true)
+            canvas.drawRoundRect(RectF(LEFT, 120f, RIGHT, 169f), 15f, 15f, titlePaint)
+            text(title, LEFT, 130f, PAGE_WIDTH - 2f * LEFT, 23f, Color.WHITE, center = true, bold = true)
+            text(bakery, LEFT, 177f, PAGE_WIDTH - 2f * LEFT, 18f, dark, center = true, bold = true)
+            text(period, LEFT, 201f, PAGE_WIDTH - 2f * LEFT, 11f, dark, center = true)
+            val footer = Path().apply {
+                moveTo(0f, 804f)
+                cubicTo(170f, 780f, 280f, 822f, 425f, 797f)
+                cubicTo(500f, 787f, 553f, 809f, 595f, 798f)
+                lineTo(595f, 842f)
+                lineTo(0f, 842f)
+                close()
+            }
+            canvas.drawPath(footer,Paint(Paint.ANTI_ALIAS_FLAG).apply { color=gold })
+            rect(LEFT, 770f, RIGHT, 772f, gold)
+            text("رغيف • إدارة البيانات اليومية للمخابز", LEFT, 779f, 415f, 10f, dark)
+            text("صفحة " + number, 443f, 779f, 118f, 10f, dark, center = true)
         }
 
         fun financialHeader() {
