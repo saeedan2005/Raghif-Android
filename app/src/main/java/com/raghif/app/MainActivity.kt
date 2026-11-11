@@ -136,6 +136,7 @@ class MainActivity : ComponentActivity() {
     var message by remember { mutableStateOf<String?>(null) }
     var editingBakery by remember { mutableStateOf<Bakery?>(null) }
     var currentRecord by remember { mutableStateOf<DailyRecord?>(null) }
+    var draftDate by remember { mutableStateOf(today()) }
     var reportRows by remember { mutableStateOf<List<DailyRecord>>(emptyList()) }
 
     CompositionLocalProvider(LocalRaghifSound provides clickSound) {
@@ -167,7 +168,7 @@ class MainActivity : ComponentActivity() {
                     LazyColumn(verticalArrangement=Arrangement.spacedBy(8.dp)) {
                         items(bakeries, key={it.id}) { b ->
                             Card(
-                                Modifier.fillMaxWidth().clickable { clickSound(); selected=b; currentRecord=null; navigate("dashboard") },
+                                Modifier.fillMaxWidth().clickable { clickSound(); selected=b; currentRecord=null;draftDate=today(); navigate("dashboard") },
                                 shape=RoundedCornerShape(18.dp),
                                 border=BorderStroke(1.dp,RaghifPalette.Golden),
                                 colors=CardDefaults.cardColors(containerColor=if(night) MaterialTheme.colorScheme.surface else RaghifPalette.Paper)
@@ -201,15 +202,15 @@ class MainActivity : ComponentActivity() {
                     }
                 })
                 "dashboard" -> selected?.let { b ->
-                    RaghifDashboard(db,b,onDaily={currentRecord=null;navigate("daily")},onStats={navigate("stats")},onFinancial={navigate("financial")},onSearch={navigate("search")},onHistory={navigate("search")},onExport={navigate("export")})
+                    RaghifDashboard(db,b,onDaily={currentRecord=null;draftDate=today();navigate("daily")},onStats={navigate("stats")},onFinancial={navigate("financial")},onSearch={navigate("search")},onHistory={navigate("search")},onExport={navigate("export")})
                 }
                 "daily" -> selected?.let { b ->
-                    DailyScreen(db,b,currentRecord,onChoose={currentRecord=it},onNew={currentRecord=null},onSaved={currentRecord=it;message="تم حفظ السجل اليومي.";},onStats={clickSound();navigate("stats")},onFinancial={clickSound();navigate("financial")},onSearch={clickSound();navigate("search")},message={message=it})
+                    DailyScreen(db,b,currentRecord,draftDate,onChoose={record->currentRecord=record;draftDate=record?.date ?: today()},onNew={currentRecord=null;draftDate=today()},onNewForDate={chosen->currentRecord=null;draftDate=chosen},onSaved={record->currentRecord=record;draftDate=record.date;message="تم حفظ السجل اليومي.";},onStats={clickSound();navigate("stats")},onFinancial={clickSound();navigate("financial")},onSearch={clickSound();navigate("search")},message={message=it})
                 }
                 "stats" -> selected?.let { StatsScreen(db,it) }
                 "financial" -> selected?.let { FinancialScreen(db,it) }
                 "export" -> selected?.let { RaghifExportScreen(db,it) }
-                "search" -> selected?.let { b -> SearchScreen(db,b,onOpen={record -> currentRecord=record;navigate("daily")}) }
+                "search" -> selected?.let { b -> SearchScreen(db,b,onOpen={record -> currentRecord=record;draftDate=record.date;navigate("daily")}) }
                 "settings" -> SettingsScreen(db,night,onNightChange,soundEnabled,{ soundEnabled=it; soundSettings.edit().putBoolean("sound",it).apply();if(it)playRaghifClick(clickContext) })
             }
         }
@@ -253,10 +254,10 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable private fun DailyScreen(db:AppDatabase,bakery:Bakery,initial:DailyRecord?,onChoose:(DailyRecord?)->Unit,onNew:()->Unit,onSaved:(DailyRecord)->Unit,onStats:()->Unit,onFinancial:()->Unit,onSearch:()->Unit,message:(String)->Unit) {
+@Composable private fun DailyScreen(db:AppDatabase,bakery:Bakery,initial:DailyRecord?,draftDate:String,onChoose:(DailyRecord?)->Unit,onNew:()->Unit,onNewForDate:(String)->Unit,onSaved:(DailyRecord)->Unit,onStats:()->Unit,onFinancial:()->Unit,onSearch:()->Unit,message:(String)->Unit) {
     val scope= rememberCoroutineScope()
     val tap=LocalRaghifSound.current
-    var date by remember(initial){mutableStateOf(initial?.date ?: today())}
+    var date by remember(initial,draftDate){mutableStateOf(initial?.date ?: draftDate)}
     var note by remember(initial){mutableStateOf(initial?.note.orEmpty())}
     var flour by remember(initial){mutableStateOf(initial?.flourKg?.toString().orEmpty())}
     var pieces by remember(initial){mutableStateOf(initial?.pieces?.toString().orEmpty())}
@@ -277,7 +278,13 @@ class MainActivity : ComponentActivity() {
         }
         OutlinedButton(onClick=onFinancial,modifier=Modifier.fillMaxWidth()){Icon(Icons.Default.ReceiptLong,null);Text("التقرير المالي")}
         OutlinedButton(onClick=onSearch,modifier=Modifier.fillMaxWidth()){Icon(Icons.Default.Search,null);Text("البحث في السجلات")}
-        RaghifDateField("التاريخ",date,{date=it})
+        RaghifDateField("التاريخ",date,{chosen ->
+            scope.launch {
+                val savedOnDate=db.dailyDao().byDate(bakery.id,chosen)
+                if(savedOnDate!=null) onChoose(savedOnDate)
+                else onNewForDate(chosen)
+            }
+        })
         Text("اليوم: ${dayName(date)}",color=brown,fontWeight=FontWeight.Bold)
         Field("الملاحظات",note,{note=it},singleLine=false)
         Field("كمية الدقيق (كجم)",flour,{flour=it},true); Field("عدد الأقراص",pieces,{pieces=it},true)
