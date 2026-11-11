@@ -302,7 +302,7 @@ class MainActivity : ComponentActivity() {
             ReportActions(
                 fileName="raghif_daily_" + bakery.id + "_" + initial.date,
                 enabled=true,
-                createPdf={ RaghifPdf.daily(bakery, initial) }
+                createPdf={ context -> RaghifPdf.daily(context, bakery, initial) }
             )
         }
     }
@@ -426,7 +426,7 @@ class MainActivity : ComponentActivity() {
             ReportActions(
                 fileName="raghif_financial_" + b.id + "_" + normalizedDigits(from) + "_" + normalizedDigits(to),
                 enabled=true,
-                createPdf={ RaghifPdf.financial(b,list,normalizedDigits(from),normalizedDigits(to)) }
+                createPdf={ context -> RaghifPdf.financial(context,b,list,normalizedDigits(from),normalizedDigits(to)) }
             )
         }
     }
