@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.aspectRatio
@@ -35,15 +37,15 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.annotation.DrawableRes
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.raghif.app.R
 
 /**
- * Colors and imagery are taken from the nine supplied Raghif mockups.
- * The header is a cropped ORIGINAL reference image: it retains the actual
- * Arabic logo, wheat, bread and working oven, not an emoji replacement.
+ * Raghif visual palette from the supplied reference designs.
+ * Never stretch or crop image assets. Editable UI content is composed separately.
  */
 object RaghifPalette {
     val DeepBrown = Color(0xFF642800)
@@ -58,14 +60,38 @@ object RaghifPalette {
     val GoldBorder = Color(0xFFE98D18)
 }
 
+/**
+ * Source aspect ratio is read from the actual bitmap, not assumed from the
+ * phone or from the design mock-up. FIT preserves every original pixel of the
+ * image's visible area; any extra space is an intentional letterbox.
+ */
+@Composable
+fun RaghifUncroppedImage(
+    @DrawableRes drawableId: Int,
+    description: String?,
+    modifier: Modifier = Modifier
+) {
+    val painter = painterResource(id = drawableId)
+    val intrinsic = painter.intrinsicSize
+    val ratio = if (
+        intrinsic.width.isFinite() && intrinsic.height.isFinite() &&
+        intrinsic.width > 0f && intrinsic.height > 0f
+    ) intrinsic.width / intrinsic.height else 1f
+    Image(
+        painter = painter,
+        contentDescription = description,
+        modifier = modifier.fillMaxWidth().aspectRatio(ratio, matchHeightConstraintsFirst = false),
+        contentScale = ContentScale.Fit,
+        alignment = Alignment.Center
+    )
+}
+
 @Composable
 fun RaghifHeader(title: String, subtitle: String = "إدارة البيانات اليومية للمخابز") {
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Image(
-            painter = painterResource(R.drawable.raghif_original_header),
-            contentDescription = "الشعار الأصلي لرغيف مع سنابل القمح والخبز والفرن",
-            modifier = Modifier.fillMaxWidth().aspectRatio(420f / 79f),
-            contentScale = ContentScale.FillBounds
+        RaghifUncroppedImage(
+            drawableId = R.drawable.raghif_original_header,
+            description = "الشعار مع سنابل القمح والخبز والفرن"
         )
         RaghifSectionTitle(title)
     }
