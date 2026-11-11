@@ -52,6 +52,9 @@ jobs:
       - name: Verify original image aspect-ratio safeguards
         run: python3 scripts/validate_image_usage.py
 
+      - name: Verify review notes and unchanged accounting formulas
+        run: python3 scripts/validate_review_requirements.py
+
       - name: Run unit tests
         run: gradle testDebugUnitTest --stacktrace
 
