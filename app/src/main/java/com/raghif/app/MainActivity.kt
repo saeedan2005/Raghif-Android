@@ -271,30 +271,54 @@ class MainActivity : ComponentActivity() {
     val preview=DailyRecord(id=initial?.id?:0,bakeryId=bakery.id,date=date,flourKg=f,pieces=p,workersMeal=m,waste=w,creditSold=c,revenue=rev,note=note,unitRevenueUsed=initial?.unitRevenueUsed?:bakery.unitRevenue,piecesPerBagUsed=initial?.piecesPerBagUsed?:bakery.piecesPerBag,flourBagWeightUsed=initial?.flourBagWeightUsed?:bakery.flourBagWeight)
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
         Text(bakery.name,Modifier.fillMaxWidth(),fontSize=23.sp,fontWeight=FontWeight.Bold,color=brown)
-        RaghifSectionTitle("بيانات السجل والإنتاج")
-        Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick={tap();scope.launch { history=db.dailyDao().all(bakery.id);showHistory=true }},modifier=Modifier.weight(1f)){Icon(Icons.Default.Search,null);Text("السجلات السابقة")}
-            OutlinedButton(onClick=onStats,modifier=Modifier.weight(1f)){Icon(Icons.Default.BarChart,null);Text("الإحصاءات")}
-        }
-        OutlinedButton(onClick=onFinancial,modifier=Modifier.fillMaxWidth()){Icon(Icons.Default.ReceiptLong,null);Text("التقرير المالي")}
-        OutlinedButton(onClick=onSearch,modifier=Modifier.fillMaxWidth()){Icon(Icons.Default.Search,null);Text("البحث في السجلات")}
-        RaghifDateField("التاريخ",date,{chosen ->
-            scope.launch {
-                val savedOnDate=db.dailyDao().byDate(bakery.id,chosen)
-                if(savedOnDate!=null) onChoose(savedOnDate)
-                else onNewForDate(chosen)
+        RaghifSectionTitle("بيانات السجل والتاريخ")
+        RaghifCreamPanel(Modifier.fillMaxWidth()) {
+            Column(Modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(6.dp)) {
+                RaghifDateField("التاريخ",date,{chosen ->
+                    scope.launch {
+                        val savedOnDate=db.dailyDao().byDate(bakery.id,chosen)
+                        if(savedOnDate!=null) onChoose(savedOnDate)
+                        else onNewForDate(chosen)
+                    }
+                })
+                Text("اليوم: " + dayName(date),color=RaghifPalette.TextBrown,fontWeight=FontWeight.Bold)
+                Text(
+                    if(initial==null) "سجل مستقل جديد للتاريخ المختار"
+                    else "السجل المحفوظ لهذا التاريخ — رقم " + initial.id,
+                    color=RaghifPalette.Brown,fontSize=12.sp
+                )
             }
-        })
-        Text("اليوم: ${dayName(date)}",color=brown,fontWeight=FontWeight.Bold)
-        Field("الملاحظات",note,{note=it},singleLine=false)
-        Field("كمية الدقيق (كجم)",flour,{flour=it},true); Field("عدد الأقراص",pieces,{pieces=it},true)
-        Field("عشاء العمال (اختياري)",meal,{meal=it},true); Field("التالف (اختياري)",waste,{waste=it},true)
-        Field("المباع آجل (اختياري)",credit,{credit=it},true); Field("الإيراد (ريال)",revenue,{revenue=it},true)
-        Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
-            Text("المباع نقدًا: ${fmt(cashSold(preview))} حبة")
-            Text("الفرق: ${fmt(difference(preview))} حبة",color=if(difference(preview)<0) Color.Red else brown)
-            Text("متوسط إنتاج الكيس: ${avgBag(preview)?.let{fmt(it)} ?: "غير متاح"} حبة/كيس")
-        } }
+        }
+        RaghifSectionTitle("بيانات الإنتاج")
+        RaghifCreamPanel(Modifier.fillMaxWidth()) {
+            Column(verticalArrangement=Arrangement.spacedBy(5.dp)) {
+                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                    Box(Modifier.weight(1f)) { Field("كمية الدقيق (كجم)",flour,{flour=it},true) }
+                    Box(Modifier.weight(1f)) { Field("عدد الحبات",pieces,{pieces=it},true) }
+                }
+                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                    Box(Modifier.weight(1f)) { Field("عشاء العمال",meal,{meal=it},true) }
+                    Box(Modifier.weight(1f)) { Field("التالف",waste,{waste=it},true) }
+                }
+            }
+        }
+        RaghifSectionTitle("بيانات المبيعات والمصروفات")
+        RaghifCreamPanel(Modifier.fillMaxWidth()) {
+            Column(verticalArrangement=Arrangement.spacedBy(5.dp)) {
+                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                    Box(Modifier.weight(1f)) { Field("المباع آجل (حبات)",credit,{credit=it},true) }
+                    Box(Modifier.weight(1f)) { Field("الإيراد (ريال)",revenue,{revenue=it},true) }
+                }
+                Field("الملاحظات",note,{note=it},singleLine=false)
+            }
+        }
+        RaghifSectionTitle("النتائج المحسوبة تلقائيًا")
+        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(5.dp)) {
+            RaghifMetricCard("المباع نقدًا",fmt(cashSold(preview)),"حبة",Icons.Default.Paid,Modifier.weight(1f))
+            RaghifMetricCard("الفرق",fmt(difference(preview)),"حبة",Icons.Default.BakeryDining,Modifier.weight(1f))
+            RaghifMetricCard("متوسط الكيس",avgBag(preview)?.let{fmt(it)}?:"—","حبة",Icons.Default.Inventory2,Modifier.weight(1f))
+        }
+        RaghifSectionTitle("حفظ السجل")
         Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
             Button(onClick={
                 tap()
@@ -315,8 +339,8 @@ class MainActivity : ComponentActivity() {
                         message("تعذر حفظ سجل هذا التاريخ: " + (error.localizedMessage ?: "خطأ غير معروف"))
                     }
                 }
-            },modifier=Modifier.weight(1f)){Text("حفظ")}
-            OutlinedButton(onClick={tap();onNew()},modifier=Modifier.weight(1f)){Text("سجل جديد")}
+            },modifier=Modifier.weight(1f).height(52.dp)){Icon(Icons.Default.Save,null); Text(" حفظ السجل")}
+            OutlinedButton(onClick={tap();onNew()},modifier=Modifier.weight(1f).height(52.dp)){Text("سجل جديد")}
         }
         
         if(initial!=null) {
