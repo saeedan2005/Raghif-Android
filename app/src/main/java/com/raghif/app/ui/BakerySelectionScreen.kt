@@ -38,8 +38,6 @@ import com.raghif.app.data.Bakery
 fun BakerySelectionScreen(
     bakeries: List<Bakery>,
     selectedBakeryId: Long?,
-    night: Boolean,
-    onNightToggle: () -> Unit,
     onSettings: () -> Unit,
     onAddBakery: () -> Unit,
     onOpenBakery: (Bakery) -> Unit,
@@ -59,27 +57,15 @@ fun BakerySelectionScreen(
                 ),
                 horizontalAlignment=Alignment.CenterHorizontally
             ) {
-                Row(
-                    Modifier.fillMaxWidth().padding(6.dp),
-                    verticalAlignment=Alignment.CenterVertically,
-                    horizontalArrangement=Arrangement.SpaceBetween
-                ) {
-                    IconButton(onClick=onSettings) {
-                        Icon(Icons.Default.Settings,"الإعدادات",
-                            tint=RaghifPalette.DeepBrown,modifier=Modifier.size(32.dp))
-                    }
-                    OutlinedButton(
-                        onClick=onNightToggle,
-                        shape=RoundedCornerShape(28.dp),
-                        border=BorderStroke(1.dp,RaghifPalette.Golden),
-                        colors=ButtonDefaults.outlinedButtonColors(
-                            containerColor=RaghifPalette.DeepBrown,contentColor=Color.White
-                        )
+                // RTL: Alignment.CenterEnd is the physical left side.
+                // Keep the settings gear on the left per the approved mock-up.
+                Box(Modifier.fillMaxWidth().padding(vertical=4.dp,horizontal=12.dp)) {
+                    IconButton(
+                        onClick=onSettings,
+                        modifier=Modifier.align(Alignment.CenterEnd)
                     ) {
-                        Text("الوضع الليلي",fontSize=12.sp)
-                        Spacer(Modifier.width(5.dp))
-                        Icon(if(night) Icons.Default.WbSunny else Icons.Default.Nightlight,
-                            contentDescription=null,modifier=Modifier.size(18.dp))
+                        Icon(Icons.Default.Settings,"الإعدادات",
+                            tint=RaghifPalette.DeepBrown,modifier=Modifier.size(34.dp))
                     }
                 }
                 RaghifUncroppedImage(
