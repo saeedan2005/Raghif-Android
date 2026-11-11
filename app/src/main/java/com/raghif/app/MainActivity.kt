@@ -234,7 +234,24 @@ class MainActivity : ComponentActivity() {
 @Composable private fun EmptyMessage(text:String) { Card(Modifier.fillMaxWidth()) { Text(text,Modifier.padding(16.dp),color=Color.Gray) } }
 
 @Composable private fun Field(label:String,value:String,onValue:(String)->Unit, numeric:Boolean=false, singleLine:Boolean=true) {
-    OutlinedTextField(value=value,onValueChange=onValue,label={Text(label)},modifier=Modifier.fillMaxWidth(),singleLine=singleLine,keyboardOptions=KeyboardOptions(keyboardType=if(numeric) KeyboardType.Number else KeyboardType.Text))
+    OutlinedTextField(
+        value=value,
+        onValueChange=onValue,
+        label={Text(label)},
+        modifier=Modifier.fillMaxWidth(),
+        singleLine=singleLine,
+        maxLines=if(singleLine) 1 else 3,
+        shape=RoundedCornerShape(14.dp),
+        colors=OutlinedTextFieldDefaults.colors(
+            focusedBorderColor=RaghifPalette.Orange,
+            unfocusedBorderColor=RaghifPalette.GoldBorder,
+            focusedContainerColor=RaghifPalette.Paper,
+            unfocusedContainerColor=RaghifPalette.Cream,
+            focusedTextColor=RaghifPalette.TextBrown,
+            unfocusedTextColor=RaghifPalette.TextBrown
+        ),
+        keyboardOptions=KeyboardOptions(keyboardType=if(numeric) KeyboardType.Number else KeyboardType.Text)
+    )
 }
 @Composable private fun BakeryForm(existing:Bakery?,onCancel:()->Unit,onSave:(Bakery)->Unit) {
     val tap = LocalRaghifSound.current
