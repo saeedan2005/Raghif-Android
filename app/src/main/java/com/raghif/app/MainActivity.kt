@@ -43,6 +43,7 @@ import com.raghif.app.ui.RaghifSectionTitle
 import com.raghif.app.ui.RaghifPalette
 import com.raghif.app.ui.RaghifFooter
 import com.raghif.app.ui.RaghifDashboard
+import com.raghif.app.ui.BakerySelectionScreen
 import com.raghif.app.ui.RaghifExportScreen
 import com.raghif.app.ui.RaghifMetricCard
 import com.raghif.app.ui.RaghifCreamPanel
@@ -145,7 +146,7 @@ class MainActivity : ComponentActivity() {
         bottomBar = { RaghifFooter(isHome=page=="bakeries",onBack={clickSound();goBack()}) }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(horizontal=8.dp,vertical=4.dp), verticalArrangement=Arrangement.spacedBy(10.dp)) {
-            RaghifHeader(when(page) {
+            if(page != "bakeries") RaghifHeader(when(page) {
                 "bakeries" -> "اختر المخبز"
                 "dashboard" -> selected?.name ?: "لوحة المخبز"
                 "bakeryForm" -> "بيانات المخبز"
@@ -161,37 +162,22 @@ class MainActivity : ComponentActivity() {
             // and the footer. Otherwise the page can be cut off on shorter phones.
             Column(Modifier.fillMaxWidth().weight(1f)) {
             when(page) {
-                "bakeries" -> {
-                    RaghifSectionTitle("المخابز المسجلة")
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                        Button(onClick={clickSound();editingBakery=null;navigate("bakeryForm")}, modifier=Modifier.weight(1f)) { Icon(Icons.Default.Add,null); Text("مخبز جديد") }
-                        OutlinedButton(onClick={clickSound();navigate("settings")}) { Icon(Icons.Default.Settings,null); Text("الإعدادات") }
-                    }
-                    if (bakeries.isEmpty()) EmptyMessage("لا توجد مخابز مضافة. أضف مخبزًا للبدء.")
-                    LazyColumn(verticalArrangement=Arrangement.spacedBy(8.dp)) {
-                        items(bakeries, key={it.id}) { b ->
-                            Card(
-                                Modifier.fillMaxWidth().clickable { clickSound(); selected=b; currentRecord=null;draftDate=today(); navigate("dashboard") },
-                                shape=RoundedCornerShape(18.dp),
-                                border=BorderStroke(1.dp,RaghifPalette.Golden),
-                                colors=CardDefaults.cardColors(containerColor=if(night) MaterialTheme.colorScheme.surface else RaghifPalette.Paper)
-                            ) {
-                                Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment=Alignment.CenterVertically) {
-                                    Icon(Icons.Default.Storefront,null,tint=RaghifPalette.Orange,modifier=Modifier.size(42.dp))
-                                    Spacer(Modifier.width(10.dp))
-                                    Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(4.dp)) {
-                                        Text(b.name, fontWeight=FontWeight.ExtraBold, fontSize=20.sp)
-                                        Text(if(b.address.isBlank()) "المخبز رقم: ${b.number}" else b.address, fontSize=13.sp)
-                                        if(b.phone.isNotBlank()) Text("هاتف: ${b.phone}",fontSize=12.sp)
-                                        Text("فتح بيانات المخبز",color=RaghifPalette.Brown,fontSize=13.sp,fontWeight=FontWeight.Bold)
-                                    }
-                                    IconButton(onClick={clickSound();editingBakery=b;navigate("bakeryForm")}) { Icon(Icons.Default.Edit,null) }
-                                    IconButton(onClick={scope.launch { if(db.dailyDao().all(b.id).isNotEmpty()) message="لا يمكن حذف مخبز يحتوي على سجلات يومية في هذه النسخة التجريبية." else { db.bakeryDao().delete(b); message="تم حذف المخبز." } }}) { Icon(Icons.Default.Delete,null,tint=Color.Red) }
-                                }
-                            }
-                        }
-                    }
-                }
+                "bakeries" -> BakerySelectionScreen(
+                    bakeries=bakeries,
+                    selectedBakeryId=selected?.id,
+                    night=night,
+                    onNightToggle={clickSound();onNightChange(!night)},
+                    onSettings={clickSound();navigate("settings")},
+                    onAddBakery={clickSound();editingBakery=null;navigate("bakeryForm")},
+                    onOpenBakery={b ->
+                        clickSound()
+                        selected=b
+                        currentRecord=null
+                        draftDate=today()
+                        navigate("dashboard")
+                    },
+                    onEditBakery={b -> clickSound();editingBakery=b;navigate("bakeryForm")}
+                )
                 "bakeryForm" -> BakeryForm(editingBakery, onCancel={goBack()}, onSave={b ->
                     scope.launch {
                         val old=editingBakery
