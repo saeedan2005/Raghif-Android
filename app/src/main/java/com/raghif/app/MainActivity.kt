@@ -501,6 +501,8 @@ class MainActivity : ComponentActivity() {
     var to by remember { mutableStateOf(today()) }
     var rows by remember { mutableStateOf<List<DailyRecord>?>(null) }
     var err by remember { mutableStateOf<String?>(null) }
+    var showDetails by remember { mutableStateOf(false) }
+    LaunchedEffect(b.id) { rows=db.dailyDao().between(b.id,from,to) }
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -529,24 +531,56 @@ class MainActivity : ComponentActivity() {
         rows?.takeIf { it.isNotEmpty() }?.let { list ->
             val totalRevenue = list.sumOf { it.revenue.toDouble() }
             val totalCredit = list.sumOf { ReportMath.deferredValue(it) }
-            Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
-                    Text("إجمالي الإيراد: " + fmt(totalRevenue) + " ريال",fontWeight=FontWeight.Bold)
-                    Text("إجمالي المباع آجل: " + fmt(totalCredit) + " ريال",fontWeight=FontWeight.Bold)
-                    Text("إجمالي المبيعات: " + fmt(totalRevenue+totalCredit) + " ريال",fontWeight=FontWeight.Bold,color=brown)
-                }
+            val totalPieces=list.sumOf { it.pieces }
+            val totalFlour=list.sumOf { it.flourKg }
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(7.dp)) {
+                RaghifMetricCard("إجمالي الإيرادات",fmt(totalRevenue),"ريال",Icons.Default.Paid,Modifier.weight(1f))
+                RaghifMetricCard("إجمالي الإنتاج",fmt(totalPieces),"حبة",Icons.Default.BakeryDining,Modifier.weight(1f))
             }
-            list.forEach { r ->
-                Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
-                        Text(prettyDate(r.date),fontWeight=FontWeight.Bold,color=brown)
-                        Text("الإيراد: " + fmt(r.revenue) + " ريال")
-                        Text("المباع آجل: " + fmt(ReportMath.deferredValue(r)) + " ريال")
-                        Text("الإجمالي: " + fmt(ReportMath.totalValue(r)) + " ريال",fontWeight=FontWeight.SemiBold)
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(7.dp)) {
+                RaghifMetricCard("كمية الدقيق",fmt(totalFlour),"كيلو",Icons.Default.Inventory2,Modifier.weight(1f))
+                RaghifMetricCard("عدد السجلات",fmt(list.size),"سجل",Icons.Default.Description,Modifier.weight(1f))
+            }
+            RecordCharts(list)
+            RaghifSectionTitle("أعلى النتائج")
+            RaghifCreamPanel(Modifier.fillMaxWidth()) {
+                Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                    list.maxByOrNull { it.revenue }?.let { record ->
+                        Text("أكثر يوم تحقيقًا للإيراد: " + prettyDate(record.date),
+                            fontWeight=FontWeight.Bold,color=RaghifPalette.TextBrown)
+                        Text(fmt(record.revenue) + " ريال",color=RaghifPalette.Brown)
+                    }
+                    list.maxByOrNull { it.pieces }?.let { record ->
+                        Text("أعلى يوم إنتاجًا: " + prettyDate(record.date),
+                            fontWeight=FontWeight.Bold,color=RaghifPalette.TextBrown)
+                        Text(fmt(record.pieces) + " حبة",color=RaghifPalette.Brown)
                     }
                 }
             }
-            Text("الحساب: عدد الحبات المباعة آجلًا ÷ عدد الحبات في الكيس × قيمة الكيس.",fontSize=12.sp,color=Color.Gray)
+            RaghifSectionTitle("ملخص المبيعات")
+            RaghifCreamPanel(Modifier.fillMaxWidth()) {
+                Column(verticalArrangement=Arrangement.spacedBy(6.dp)) {
+                    Text("الإيراد النقدي: " + fmt(totalRevenue) + " ريال",color=RaghifPalette.TextBrown)
+                    Text("قيمة المبيعات الآجلة: " + fmt(totalCredit) + " ريال",color=RaghifPalette.TextBrown)
+                    Text("إجمالي المبيعات: " + fmt(totalRevenue+totalCredit) + " ريال",
+                        fontWeight=FontWeight.Bold,color=RaghifPalette.Brown)
+                }
+            }
+            OutlinedButton(
+                onClick={tap();showDetails=!showDetails},
+                modifier=Modifier.fillMaxWidth()
+            ) { Text(if(showDetails) "إخفاء تفاصيل الأيام" else "عرض تفاصيل الأيام") }
+            if(showDetails) list.forEach { record ->
+                RaghifCreamPanel(Modifier.fillMaxWidth()) {
+                    Column(verticalArrangement=Arrangement.spacedBy(3.dp)) {
+                        Text(prettyDate(record.date),fontWeight=FontWeight.Bold,color=RaghifPalette.TextBrown)
+                        Text("الإيراد: " + fmt(record.revenue) + " ريال",color=RaghifPalette.TextBrown)
+                        Text("المباع آجل: " + fmt(ReportMath.deferredValue(record)) + " ريال",color=RaghifPalette.TextBrown)
+                        Text("الإجمالي: " + fmt(ReportMath.totalValue(record)) + " ريال",color=RaghifPalette.Brown)
+                    }
+                }
+            }
+            RaghifSectionTitle("تصدير التقرير PDF")
             ReportActions(
                 fileName="raghif_financial_" + b.id + "_" + normalizedDigits(from) + "_" + normalizedDigits(to),
                 enabled=true,
