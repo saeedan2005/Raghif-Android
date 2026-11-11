@@ -280,11 +280,18 @@ class MainActivity : ComponentActivity() {
                 val nums=listOf(flour,pieces,meal,waste,credit,revenue)
                 if(dt==null||dt.isAfter(LocalDate.now())||normalizedDigits(flour).toLongOrNull()==null||normalizedDigits(pieces).toLongOrNull()==null||normalizedDigits(revenue).toLongOrNull()==null||listOf(flour,pieces,revenue).any{(normalizedDigits(it).toLongOrNull()?:-1)<0}||listOf(meal,waste,credit).any{it.isNotBlank()&&(normalizedDigits(it).toLongOrNull()?:-1)<0}) { message("تحقق من التاريخ والحقول الرقمية؛ يجب أن تكون القيم أعدادًا صحيحة غير سالبة.");return@Button }
                 scope.launch {
-                    val safeDate=dt!!.format(dbFmt)
-                    val duplicate=db.dailyDao().byDate(bakery.id,safeDate)
-                    if(duplicate!=null&&duplicate.id!=(initial?.id?:0L)) { message("يوجد سجل لهذا المخبز في هذا التاريخ.");return@launch }
-                    val record=preview.copy(id=initial?.id?:0,date=safeDate,workersMeal=m,waste=w,creditSold=c,unitRevenueUsed=initial?.unitRevenueUsed?:bakery.unitRevenue,piecesPerBagUsed=initial?.piecesPerBagUsed?:bakery.piecesPerBag,flourBagWeightUsed=initial?.flourBagWeightUsed?:bakery.flourBagWeight)
-                    if(initial==null) { val id=db.dailyDao().insert(record); onSaved(record.copy(id=id)) } else { db.dailyDao().update(record);onSaved(record) }
+                    val selectedDate = dt!!.format(dbFmt)
+                    val entered = preview.copy(
+                        id = 0L, // Never copy the id of the record previously opened.
+                        date = selectedDate, workersMeal = m, waste = w, creditSold = c
+                    )
+                    runCatching {
+                        DailyRecordStore.save(db, bakery, entered)
+                    }.onSuccess { saved ->
+                        onSaved(saved)
+                    }.onFailure { error ->
+                        message("تعذر حفظ سجل هذا التاريخ: " + (error.localizedMessage ?: "خطأ غير معروف"))
+                    }
                 }
             },modifier=Modifier.weight(1f)){Text("حفظ")}
             OutlinedButton(onClick={tap();onNew()},modifier=Modifier.weight(1f)){Text("سجل جديد")}
