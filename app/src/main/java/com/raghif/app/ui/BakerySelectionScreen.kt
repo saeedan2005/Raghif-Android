@@ -64,6 +64,10 @@ fun BakerySelectionScreen(
                     verticalAlignment=Alignment.CenterVertically,
                     horizontalArrangement=Arrangement.SpaceBetween
                 ) {
+                    IconButton(onClick=onSettings) {
+                        Icon(Icons.Default.Settings,"الإعدادات",
+                            tint=RaghifPalette.DeepBrown,modifier=Modifier.size(32.dp))
+                    }
                     OutlinedButton(
                         onClick=onNightToggle,
                         shape=RoundedCornerShape(28.dp),
@@ -72,14 +76,10 @@ fun BakerySelectionScreen(
                             containerColor=RaghifPalette.DeepBrown,contentColor=Color.White
                         )
                     ) {
+                        Text("الوضع الليلي",fontSize=12.sp)
+                        Spacer(Modifier.width(5.dp))
                         Icon(if(night) Icons.Default.WbSunny else Icons.Default.Nightlight,
                             contentDescription=null,modifier=Modifier.size(18.dp))
-                        Spacer(Modifier.width(5.dp))
-                        Text("الوضع الليلي",fontSize=12.sp)
-                    }
-                    IconButton(onClick=onSettings) {
-                        Icon(Icons.Default.Settings,"الإعدادات",
-                            tint=RaghifPalette.DeepBrown,modifier=Modifier.size(32.dp))
                     }
                 }
                 RaghifUncroppedImage(
@@ -126,9 +126,9 @@ fun BakerySelectionScreen(
                     contentColor=RaghifPalette.DeepBrown
                 )
             ) {
-                Icon(Icons.Default.Add,null,modifier=Modifier.size(30.dp))
-                Spacer(Modifier.width(8.dp))
                 Text("إضافة مخبز جديد",fontSize=19.sp,fontWeight=FontWeight.Bold)
+                Spacer(Modifier.width(8.dp))
+                Icon(Icons.Default.Add,null,modifier=Modifier.size(30.dp))
             }
         }
     }
@@ -219,9 +219,9 @@ private fun BakerySelectionCard(
                 containerColor=RaghifPalette.DeepBrown,contentColor=Color.White
             )
         ) {
-            Icon(Icons.Default.Storefront,null,modifier=Modifier.size(19.dp))
-            Spacer(Modifier.width(8.dp))
             Text("فتح بيانات المخبز",fontSize=15.sp,fontWeight=FontWeight.Bold)
+            Spacer(Modifier.width(8.dp))
+            Icon(Icons.Default.Storefront,null,modifier=Modifier.size(19.dp))
         }
     }
 }
