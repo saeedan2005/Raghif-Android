@@ -458,8 +458,8 @@ class MainActivity : ComponentActivity() {
     val tap=LocalRaghifSound.current
     val all by db.dailyDao().observe(bakery.id).collectAsState(initial=emptyList())
     var query by remember(bakery.id) { mutableStateOf("") }
-    var from by remember(bakery.id) { mutableStateOf("") }
-    var to by remember(bakery.id) { mutableStateOf("") }
+    var from by remember(bakery.id) { mutableStateOf(LocalDate.now().minusDays(30).toString()) }
+    var to by remember(bakery.id) { mutableStateOf(today()) }
     val start = if (from.isBlank()) null else runCatching { LocalDate.parse(normalizedDigits(from)) }.getOrNull()
     val end = if (to.isBlank()) null else runCatching { LocalDate.parse(normalizedDigits(to)) }.getOrNull()
     val datesValid = (from.isBlank() || start != null) && (to.isBlank() || end != null) && (start == null || end == null || !start.isAfter(end))
@@ -471,23 +471,43 @@ class MainActivity : ComponentActivity() {
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(10.dp)) {
         RaghifSectionTitle("البحث في سجلات " + bakery.name)
-        Field("رقم السجل أو التاريخ أو الملاحظات",query,{query=it})
-        Field("من تاريخ (اختياري، YYYY-MM-DD)",from,{from=it})
-        Field("إلى تاريخ (اختياري، YYYY-MM-DD)",to,{to=it})
+        RaghifCreamPanel(Modifier.fillMaxWidth()) {
+            Column(verticalArrangement=Arrangement.spacedBy(6.dp)) {
+                Field("ابحث برقم السجل أو اسم المخبز أو التاريخ",query,{query=it})
+            }
+        }
+        RaghifSectionTitle("خيارات البحث")
+        RaghifCreamPanel(Modifier.fillMaxWidth()) {
+            Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                Text("المخبز: " + bakery.name,color=RaghifPalette.TextBrown,fontWeight=FontWeight.Bold)
+                RaghifDateField("من تاريخ",from,{from=it})
+                RaghifDateField("إلى تاريخ",to,{to=it})
+                Text("نوع السجل: الكل",color=RaghifPalette.TextBrown)
+            }
+        }
         if(!datesValid) Text("يرجى إدخال تواريخ صحيحة وبترتيب صحيح.",color=MaterialTheme.colorScheme.error)
         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
-            Text("نتائج البحث: " + found.size,fontWeight=FontWeight.Bold)
-            TextButton(onClick={tap();query="";from="";to=""}){Text("مسح البحث")}
+            Text("نتائج البحث (" + found.size + " سجل)",fontWeight=FontWeight.Bold,color=RaghifPalette.TextBrown)
+            TextButton(onClick={tap();query="";from=LocalDate.now().minusDays(30).toString();to=today()}){Text("مسح البحث")}
         }
         if(found.isEmpty() && datesValid) EmptyMessage("لا توجد سجلات مطابقة.")
-        found.forEach { r ->
-            Card(Modifier.fillMaxWidth().clickable { tap();onOpen(r) },shape=RoundedCornerShape(16.dp)) {
-                Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
-                    Text("السجل رقم " + r.id + " — " + prettyDate(r.date),fontWeight=FontWeight.Bold,color=brown)
-                    Text("كمية الدقيق: " + fmt(r.flourKg) + " كيلو • عدد الحبات: " + fmt(r.pieces))
-                    Text("الإيراد: " + fmt(r.revenue) + " ريال")
-                    if(r.note.isNotBlank()) Text(r.note,maxLines=2)
-                    Text("اضغط لعرض السجل وتعديله",color=Color.Gray,fontSize=12.sp)
+        RaghifSectionTitle("نتائج البحث")
+        found.forEach { record ->
+            RaghifCreamPanel(Modifier.fillMaxWidth().clickable { tap();onOpen(record) }) {
+                Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                    Text(prettyDate(record.date) + " — " + bakery.name,
+                        color=RaghifPalette.Brown,fontWeight=FontWeight.Bold)
+                    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
+                        Column { Text("كمية الدقيق",fontSize=12.sp,color=RaghifPalette.TextBrown)
+                            Text(fmt(record.flourKg)+" كيلو",fontWeight=FontWeight.Bold,color=RaghifPalette.TextBrown) }
+                        Column { Text("عدد الحبات",fontSize=12.sp,color=RaghifPalette.TextBrown)
+                            Text(fmt(record.pieces)+" حبة",fontWeight=FontWeight.Bold,color=RaghifPalette.TextBrown) }
+                        Column { Text("الإيراد",fontSize=12.sp,color=RaghifPalette.TextBrown)
+                            Text(fmt(record.revenue)+" ريال",fontWeight=FontWeight.Bold,color=RaghifPalette.TextBrown) }
+                    }
+                    OutlinedButton(onClick={tap();onOpen(record)},modifier=Modifier.fillMaxWidth()) {
+                        Icon(Icons.Default.Visibility,null);Text(" عرض التفاصيل")
+                    }
                 }
             }
         }
