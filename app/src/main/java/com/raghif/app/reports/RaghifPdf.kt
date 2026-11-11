@@ -18,6 +18,7 @@ import android.text.TextDirectionHeuristics
 import android.text.TextPaint
 import com.raghif.app.data.Bakery
 import com.raghif.app.data.DailyRecord
+import com.raghif.app.ui.ImageFit
 import java.io.ByteArrayOutputStream
 import java.text.NumberFormat
 import java.time.LocalDate
@@ -130,11 +131,19 @@ object RaghifPdf {
 
         init {
             canvas.drawColor(Color.rgb(255, 247, 227))
-            // Actual cropped reference image: wheat, Arabic Raghif logo, bread and oven.
+            // The logo artwork is contained within this area, never cropped or stretched.
+            // Empty side margins are deliberate if another original image has a different ratio.
             val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.raghif_original_header)
             if (bitmap != null) {
-                canvas.drawBitmap(bitmap, null, RectF(0f, 0f, PAGE_WIDTH.toFloat(), 112f),
-                    Paint(Paint.ANTI_ALIAS_FLAG).apply { isFilterBitmap=true })
+                val destination = ImageFit.contain(
+                    bitmap.width.toFloat(), bitmap.height.toFloat(), PAGE_WIDTH.toFloat(), 112f
+                )
+                canvas.drawBitmap(
+                    bitmap,
+                    null,
+                    RectF(destination.left, destination.top, destination.right, destination.bottom),
+                    Paint(Paint.ANTI_ALIAS_FLAG).apply { isFilterBitmap = true }
+                )
                 bitmap.recycle()
             }
             val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
