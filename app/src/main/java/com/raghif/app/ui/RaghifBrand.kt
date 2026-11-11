@@ -27,6 +27,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -71,6 +74,20 @@ fun RaghifUncroppedImage(
     description: String?,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val revision = RaghifBrandAsset.revision
+    val restored = remember(context, revision) { RaghifBrandAsset.decode(context)?.asImageBitmap() }
+    if (restored != null) {
+        Image(
+            bitmap = restored,
+            contentDescription = description,
+            modifier = modifier.fillMaxWidth().aspectRatio(
+                restored.width.toFloat() / restored.height.toFloat()
+            ),
+            contentScale = ContentScale.Fit
+        )
+        return
+    }
     val painter = painterResource(id = drawableId)
     val intrinsic = painter.intrinsicSize
     val ratio = if (
