@@ -5,6 +5,9 @@ import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.raghif.app.ui.RaghifBrandAsset
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.Image
@@ -625,6 +628,20 @@ class MainActivity : ComponentActivity() {
     val tap=LocalRaghifSound.current
     var confirmClear by remember { mutableStateOf(false) }
     var information by remember { mutableStateOf<String?>(null) }
+    val context=LocalContext.current
+    val imagePicker=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if(uri != null) scope.launch {
+            runCatching {
+                val bytes=context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                    ?: error("تعذر قراءة الصورة")
+                RaghifBrandAsset.importOriginal(context,bytes)
+            }.onSuccess {
+                information="تم اعتماد الترويسة الأصلية عالية الدقة في الشاشات وتقارير PDF."
+            }.onFailure { exception ->
+                information="تعذر اعتماد الصورة: "+(exception.localizedMessage ?: "خطأ غير معروف")
+            }
+        }
+    }
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         verticalArrangement=Arrangement.spacedBy(12.dp)
@@ -660,6 +677,24 @@ class MainActivity : ComponentActivity() {
                     Icon(Icons.Default.DeleteForever,null,tint=RaghifPalette.Danger)
                     Spacer(Modifier.width(8.dp))
                     Text("مسح جميع البيانات",color=RaghifPalette.Danger,fontWeight=FontWeight.Bold)
+                }
+            }
+        }
+        RaghifSectionTitle("الصورة الرئيسية للتطبيق",sideAligned=true)
+        RaghifCreamPanel(Modifier.fillMaxWidth()) {
+            Column(Modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                Text(
+                    "للحفاظ على وضوح صورة رغيف الأصلية، اختر صورة الترويسة الأفقية عالية الدقة. ستظهر كاملة دون قص أو تمديد في التطبيق والتقارير.",
+                    fontSize=12.sp,color=RaghifPalette.TextBrown
+                )
+                OutlinedButton(
+                    onClick={tap();imagePicker.launch(arrayOf("image/png","image/jpeg","image/webp"))},
+                    modifier=Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Image,null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(if(RaghifBrandAsset.isInstalled(context)) "تغيير الصورة الرئيسية"
+                         else "اعتماد صورة عالية الدقة")
                 }
             }
         }
