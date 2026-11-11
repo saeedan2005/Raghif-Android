@@ -43,6 +43,7 @@ import com.raghif.app.ui.RaghifSectionTitle
 import com.raghif.app.ui.RaghifPalette
 import com.raghif.app.ui.RaghifFooter
 import com.raghif.app.ui.RaghifDashboard
+import com.raghif.app.ui.RaghifExportScreen
 import com.raghif.app.ui.RaghifCreamPanel
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
@@ -206,6 +207,7 @@ class MainActivity : ComponentActivity() {
                 }
                 "stats" -> selected?.let { StatsScreen(db,it) }
                 "financial" -> selected?.let { FinancialScreen(db,it) }
+                "export" -> selected?.let { RaghifExportScreen(db,it) }
                 "search" -> selected?.let { b -> SearchScreen(db,b,onOpen={record -> currentRecord=record;navigate("daily")}) }
                 "settings" -> SettingsScreen(db,night,onNightChange,soundEnabled,{ soundEnabled=it; soundSettings.edit().putBoolean("sound",it).apply();if(it)playRaghifClick(clickContext) })
             }
