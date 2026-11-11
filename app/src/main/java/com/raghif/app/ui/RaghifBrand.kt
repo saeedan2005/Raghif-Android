@@ -1,78 +1,121 @@
 package com.raghif.app.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BakeryDining
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.raghif.app.R
 
 /**
- * A lightweight visual theme matching the approved amber/brown bakery direction.
- * Assets from the user's reference images must still be installed separately
- * before claiming an exact pixel match.
+ * Colors and imagery are taken from the nine supplied Raghif mockups.
+ * The header is a cropped ORIGINAL reference image: it retains the actual
+ * Arabic logo, wheat, bread and working oven, not an emoji replacement.
  */
 object RaghifPalette {
-    val DeepBrown = Color(0xFF713000)
-    val Brown = Color(0xFF9C4706)
-    val Orange = Color(0xFFE68A09)
-    val Golden = Color(0xFFFFB52F)
-    val Cream = Color(0xFFFFF4DA)
-    val Paper = Color(0xFFFFF9EF)
+    val DeepBrown = Color(0xFF642800)
+    val Brown = Color(0xFF8D3900)
+    val Orange = Color(0xFFD96D00)
+    val Golden = Color(0xFFFFB326)
+    val LightGold = Color(0xFFFFDB7D)
+    val Cream = Color(0xFFFFF0D1)
+    val Paper = Color(0xFFFFF8E9)
+    val TextBrown = Color(0xFF532809)
+    val Danger = Color(0xFFB91414)
+    val GoldBorder = Color(0xFFE98D18)
 }
 
 @Composable
 fun RaghifHeader(title: String, subtitle: String = "إدارة البيانات اليومية للمخابز") {
-    val shape=RoundedCornerShape(22.dp)
-    val deep=RaghifPalette.DeepBrown
-    Box(
-        modifier=Modifier.fillMaxWidth()
-            .background(Brush.horizontalGradient(listOf(deep,RaghifPalette.Orange,deep)),shape)
-            .border(1.dp,RaghifPalette.Golden,shape)
-            .padding(vertical=15.dp,horizontal=14.dp)
-    ) {
-        Column(horizontalAlignment=Alignment.CenterHorizontally,modifier=Modifier.fillMaxWidth()) {
-            Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
-                Text("🌾",fontSize=34.sp)
-                Icon(Icons.Default.BakeryDining,contentDescription=null,tint=RaghifPalette.Cream)
-                Text("رغيف",fontWeight=FontWeight.ExtraBold,color=Color.White,fontSize=30.sp)
-                Text("🌾",fontSize=34.sp)
-            }
-            Text(subtitle,fontSize=12.sp,color=RaghifPalette.Cream)
-            Spacer(Modifier.height(8.dp))
-            Text(title,fontSize=20.sp,fontWeight=FontWeight.Bold,color=Color.White)
-        }
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Image(
+            painter = painterResource(R.drawable.raghif_original_header),
+            contentDescription = "الشعار الأصلي لرغيف مع سنابل القمح والخبز والفرن",
+            modifier = Modifier.fillMaxWidth().aspectRatio(420f / 79f),
+            contentScale = ContentScale.FillBounds
+        )
+        RaghifSectionTitle(title)
     }
 }
 
 @Composable
-fun RaghifSectionTitle(title:String) {
-    val shape=RoundedCornerShape(15.dp)
+fun RaghifSectionTitle(title: String) {
+    val shape = RoundedCornerShape(23.dp)
     Box(
-        Modifier.fillMaxWidth()
-            .background(Brush.horizontalGradient(listOf(RaghifPalette.DeepBrown,RaghifPalette.Brown,RaghifPalette.DeepBrown)),shape)
-            .border(1.dp,RaghifPalette.Golden,shape)
-            .padding(10.dp),
-        contentAlignment=Alignment.Center
+        modifier = Modifier.fillMaxWidth()
+            .padding(horizontal = 6.dp)
+            .shadow(5.dp,shape)
+            .background(
+                Brush.verticalGradient(
+                    listOf(RaghifPalette.Orange, RaghifPalette.Brown, RaghifPalette.DeepBrown)
+                ), shape
+            )
+            .border(2.dp,RaghifPalette.Golden,shape)
+            .padding(horizontal=14.dp,vertical=10.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Text(title,fontWeight=FontWeight.Bold,color=Color.White,fontSize=18.sp)
+        Text(title, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+fun RaghifCreamPanel(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    val shape = RoundedCornerShape(20.dp)
+    Box(
+        modifier
+            .shadow(3.dp,shape)
+            .background(
+                Brush.verticalGradient(listOf(Color(0xFFFFF9EC), RaghifPalette.Cream)),
+                shape
+            )
+            .border(1.25.dp,RaghifPalette.GoldBorder,shape)
+            .padding(10.dp)
+    ) {
+        content()
+    }
+}
+
+@Composable
+fun RaghifGoldWaves() {
+    Canvas(modifier=Modifier.fillMaxWidth().height(24.dp)) {
+        val w=size.width
+        val h=size.height
+        val orange=Path().apply {
+            moveTo(0f,12f)
+            cubicTo(w*0.2f,0f,w*0.4f,h*1.25f,w*0.6f,h*.52f)
+            cubicTo(w*.8f,-h*.15f,w*.9f,h*.9f,w,h*.32f)
+            lineTo(w,h);lineTo(0f,h);close()
+        }
+        drawPath(orange,RaghifPalette.Golden,style=Fill)
+        val dark=Path().apply {
+            moveTo(0f,h*.78f)
+            cubicTo(w*.25f,h*.30f,w*.38f,h*1.1f,w*.55f,h*.65f)
+            cubicTo(w*.77f,h*.3f,w*.92f,h*.8f,w,h*.6f)
+            lineTo(w,h);lineTo(0f,h);close()
+        }
+        drawPath(dark,RaghifPalette.DeepBrown,style=Fill)
+        drawLine(RaghifPalette.LightGold,Offset(0f,12f),Offset(w,12f),0.75.dp.toPx())
     }
 }
