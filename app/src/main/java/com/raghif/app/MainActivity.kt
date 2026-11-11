@@ -44,6 +44,7 @@ import com.raghif.app.ui.RaghifPalette
 import com.raghif.app.ui.RaghifFooter
 import com.raghif.app.ui.RaghifDashboard
 import com.raghif.app.ui.RaghifExportScreen
+import com.raghif.app.ui.RaghifMetricCard
 import com.raghif.app.ui.RaghifCreamPanel
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
@@ -324,20 +325,76 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable private fun StatsScreen(db:AppDatabase,b:Bakery) {
-    val scope= rememberCoroutineScope(); val tap=LocalRaghifSound.current; var from by remember{mutableStateOf(LocalDate.now().withDayOfMonth(1).format(dbFmt))};var to by remember{mutableStateOf(today())};var rows by remember{mutableStateOf<List<DailyRecord>?>(null)};var err by remember{mutableStateOf<String?>(null)}
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-        RaghifDateField("من تاريخ",from,{from=it});RaghifDateField("إلى تاريخ",to,{to=it})
-        Button(onClick={tap();val a=runCatching{LocalDate.parse(from)}.getOrNull();val z=runCatching{LocalDate.parse(to)}.getOrNull();if(a==null||z==null||a.isAfter(z)||z.isAfter(LocalDate.now()))err="تحقق من فترة التاريخ." else scope.launch{rows=db.dailyDao().between(b.id,from,to);err=if(rows!!.isEmpty())"لا توجد سجلات في الفترة المحددة." else null}},modifier=Modifier.fillMaxWidth()){Text("بحث")}
-        err?.let{Text(it,color=MaterialTheme.colorScheme.error)}
-        rows?.takeIf{it.isNotEmpty()}?.let{list->
-            Stat("عدد السجلات",fmt(list.size));Stat("إجمالي كمية الدقيق",fmt(list.sumOf{it.flourKg})+" كجم")
+    val scope=rememberCoroutineScope()
+    val tap=LocalRaghifSound.current
+    var from by remember { mutableStateOf(LocalDate.now().withDayOfMonth(1).format(dbFmt)) }
+    var to by remember { mutableStateOf(today()) }
+    var rows by remember { mutableStateOf<List<DailyRecord>?>(null) }
+    var err by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(b.id) { rows=db.dailyDao().between(b.id,from,to) }
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+        verticalArrangement=Arrangement.spacedBy(10.dp)
+    ) {
+        RaghifCreamPanel(Modifier.fillMaxWidth()) {
+            Column(verticalArrangement=Arrangement.spacedBy(6.dp)) {
+                RaghifDateField("من تاريخ",from,{from=it})
+                RaghifDateField("إلى تاريخ",to,{to=it})
+                Button(
+                    onClick={
+                        tap()
+                        val a=runCatching { LocalDate.parse(from) }.getOrNull()
+                        val z=runCatching { LocalDate.parse(to) }.getOrNull()
+                        if(a==null||z==null||a.isAfter(z)||z.isAfter(LocalDate.now())) {
+                            err="تحقق من فترة التاريخ."
+                        } else scope.launch {
+                            rows=db.dailyDao().between(b.id,from,to)
+                            err=if(rows!!.isEmpty()) "لا توجد سجلات في الفترة المحددة." else null
+                        }
+                    },
+                    modifier=Modifier.fillMaxWidth()
+                ) { Icon(Icons.Default.Search,null);Text(" عرض الإحصاءات") }
+            }
+        }
+        err?.let { Text(it,color=MaterialTheme.colorScheme.error) }
+        rows?.takeIf { it.isNotEmpty() }?.let { list ->
+            val flour=list.sumOf { it.flourKg }
+            val pieces=list.sumOf { it.pieces }
+            val revenue=list.sumOf { it.revenue }
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(7.dp)) {
+                RaghifMetricCard("إجمالي الإيرادات",fmt(revenue),"ريال",Icons.Default.Paid,Modifier.weight(1f))
+                RaghifMetricCard("إجمالي الحبات",fmt(pieces),"حبة",Icons.Default.BakeryDining,Modifier.weight(1f))
+            }
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(7.dp)) {
+                RaghifMetricCard("كمية الدقيق",fmt(flour),"كيلو",Icons.Default.Inventory2,Modifier.weight(1f))
+                RaghifMetricCard("عدد السجلات",fmt(list.size),"سجل",Icons.Default.Description,Modifier.weight(1f))
+            }
+            RecordCharts(list)
+            RaghifSectionTitle("أعلى النتائج")
+            val bestRevenue=list.maxByOrNull { it.revenue }
+            val bestProduction=list.maxByOrNull { it.pieces }
+            RaghifCreamPanel(Modifier.fillMaxWidth()) {
+                Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                    bestRevenue?.let {
+                        Text("🏆 أكثر يوم تحقيقًا للإيراد",fontWeight=FontWeight.Bold,color=RaghifPalette.TextBrown)
+                        Text(prettyDate(it.date)+" — "+fmt(it.revenue)+" ريال",color=RaghifPalette.Brown)
+                    }
+                    bestProduction?.let {
+                        Text("🏆 أعلى يوم إنتاجًا",fontWeight=FontWeight.Bold,color=RaghifPalette.TextBrown)
+                        Text(prettyDate(it.date)+" — "+fmt(it.pieces)+" حبة",color=RaghifPalette.Brown)
+                    }
+                }
+            }
+            RaghifSectionTitle("تفاصيل إضافية")
             Stat("عدد أكياس الدقيق",fmt(list.sumOf{if(it.flourBagWeightUsed>0)it.flourKg/it.flourBagWeightUsed else 0.0}))
-            Stat("إجمالي عدد الأقراص",fmt(list.sumOf{it.pieces}));Stat("إجمالي عشاء العمال",fmt(list.sumOf{it.workersMeal}))
-            Stat("إجمالي التالف",fmt(list.sumOf{it.waste}));Stat("إجمالي المباع آجل",fmt(list.sumOf{it.creditSold}))
-            Stat("إجمالي المباع نقدًا",fmt(list.sumOf{cashSold(it)}));Stat("إجمالي الإيراد",fmt(list.sumOf{it.revenue})+" ريال")
+            Stat("إجمالي عشاء العمال",fmt(list.sumOf{it.workersMeal}))
+            Stat("إجمالي التالف",fmt(list.sumOf{it.waste}))
+            Stat("إجمالي المباع آجل",fmt(list.sumOf{it.creditSold}))
+            Stat("إجمالي المباع نقدًا",fmt(list.sumOf{cashSold(it)}))
             Stat("مجموع الفرق",fmt(list.sumOf{difference(it)}))
             Stat("متوسط إنتاج الكيس",ReportMath.averagePiecesPerBag(list)?.let { fmt(it)+" حبة/كيس" } ?: "غير متاح")
-            RecordCharts(list)
+        } ?: if(err==null) {
+            RaghifCreamPanel(Modifier.fillMaxWidth()) { Text("لا توجد سجلات لهذه الفترة.",color=RaghifPalette.TextBrown) }
         }
     }
 }
