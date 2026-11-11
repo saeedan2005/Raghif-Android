@@ -39,7 +39,7 @@ import java.io.File
 fun ReportActions(
     fileName: String,
     enabled: Boolean,
-    createPdf: () -> ByteArray
+    createPdf: (Context) -> ByteArray
 ) {
     val context = LocalContext.current
     val clickSound = LocalRaghifSound.current
@@ -64,14 +64,14 @@ fun ReportActions(
         val output = File(context.cacheDir, "reports")
         if (!output.exists() && !output.mkdirs()) error("تعذر إنشاء مجلد التقارير")
         val safe = fileName.filter { it.isLetterOrDigit() || it == '-' || it == '_' }.ifBlank { "raghif-report" }
-        return File(output, safe + ".pdf").apply { writeBytes(createPdf()) }
+        return File(output, safe + ".pdf").apply { writeBytes(createPdf(context)) }
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(androidx.compose.ui.unit.Dp(8f))) {
         Button(
             onClick = {
                 clickSound()
-                runCatching { createPdf() }.onSuccess {
+                runCatching { createPdf(context) }.onSuccess {
                     pending = it
                     save.launch(fileName + ".pdf")
                 }.onFailure { notice = "تعذر إعداد PDF: " + (it.localizedMessage ?: "خطأ غير معروف") }
