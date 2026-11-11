@@ -136,6 +136,7 @@ class MainActivity : ComponentActivity() {
     }
     var message by remember { mutableStateOf<String?>(null) }
     var editingBakery by remember { mutableStateOf<Bakery?>(null) }
+    var pendingDeleteBakery by remember { mutableStateOf<Bakery?>(null) }
     var currentRecord by remember { mutableStateOf<DailyRecord?>(null) }
     var draftDate by remember { mutableStateOf(today()) }
     var reportRows by remember { mutableStateOf<List<DailyRecord>>(emptyList()) }
@@ -176,7 +177,8 @@ class MainActivity : ComponentActivity() {
                         draftDate=today()
                         navigate("dashboard")
                     },
-                    onEditBakery={b -> clickSound();editingBakery=b;navigate("bakeryForm")}
+                    onEditBakery={b -> clickSound();editingBakery=b;navigate("bakeryForm")},
+                    onDeleteBakery={b -> clickSound();pendingDeleteBakery=b}
                 )
                 "bakeryForm" -> BakeryForm(editingBakery, onCancel={goBack()}, onSave={b ->
                     scope.launch {
@@ -204,6 +206,25 @@ class MainActivity : ComponentActivity() {
             }
             }
         }
+    }
+    pendingDeleteBakery?.let { bakeryToDelete ->
+        AlertDialog(
+            onDismissRequest={pendingDeleteBakery=null},
+            title={Text("حذف المخبز")},
+            text={Text("هل تريد حذف " + bakeryToDelete.name + "؟ لا يمكن حذف مخبز لديه سجلات محفوظة.")},
+            confirmButton={TextButton(onClick={
+                pendingDeleteBakery=null
+                scope.launch {
+                    if(db.dailyDao().all(bakeryToDelete.id).isNotEmpty()) {
+                        message="لا يمكن حذف مخبز يحتوي على سجلات يومية."
+                    } else {
+                        db.bakeryDao().delete(bakeryToDelete)
+                        message="تم حذف المخبز."
+                    }
+                }
+            }) { Text("حذف",color=RaghifPalette.Danger) }},
+            dismissButton={TextButton(onClick={pendingDeleteBakery=null}) { Text("إلغاء") }}
+        )
     }
     if(confirmExit) AlertDialog(
         onDismissRequest={confirmExit=false},
