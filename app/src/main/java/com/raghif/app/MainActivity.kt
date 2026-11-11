@@ -82,14 +82,9 @@ class MainActivity : ComponentActivity() {
         val settings = getSharedPreferences("raghif_settings", MODE_PRIVATE)
         setContent {
             var night by remember { mutableStateOf(settings.getBoolean("night", false)) }
-            val colors = if (night) darkColorScheme(
-                primary = Color(0xFFFFBF69),
-                onPrimary = Color(0xFF40200B),
-                background = Color(0xFF24170F),
-                surface = Color(0xFF39271E),
-                onSurface = Color(0xFFFFF0DC),
-                secondary = Color(0xFFFFD08A)
-            ) else lightColorScheme(
+            // Night mode is intentionally background-only. Keep all controls,
+            // text colors, cards, and button styles exactly the same.
+            val colors = lightColorScheme(
                 primary = brown,
                 background = cream,
                 surface = Color.White,
@@ -143,7 +138,7 @@ class MainActivity : ComponentActivity() {
 
     CompositionLocalProvider(LocalRaghifSound provides clickSound) {
     Scaffold(
-        containerColor = if(night) MaterialTheme.colorScheme.background else RaghifPalette.Paper,
+        containerColor = if(night) Color.Black else RaghifPalette.Paper,
         bottomBar = { RaghifFooter(isHome=page=="bakeries",onBack={clickSound();goBack()}) }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(horizontal=8.dp,vertical=4.dp), verticalArrangement=Arrangement.spacedBy(10.dp)) {
@@ -166,8 +161,6 @@ class MainActivity : ComponentActivity() {
                 "bakeries" -> BakerySelectionScreen(
                     bakeries=bakeries,
                     selectedBakeryId=selected?.id,
-                    night=night,
-                    onNightToggle={clickSound();onNightChange(!night)},
                     onSettings={clickSound();navigate("settings")},
                     onAddBakery={clickSound();editingBakery=null;navigate("bakeryForm")},
                     onOpenBakery={b ->
