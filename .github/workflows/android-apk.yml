@@ -49,6 +49,9 @@ jobs:
           unzip -q /tmp/gradle.zip -d /opt
           echo "/opt/gradle-8.9/bin" >> "$GITHUB_PATH"
 
+      - name: Verify original image aspect-ratio safeguards
+        run: python3 scripts/validate_image_usage.py
+
       - name: Run unit tests
         run: gradle testDebugUnitTest --stacktrace
 
