@@ -86,6 +86,25 @@ fun ReportActions(
                 runCatching {
                     val file = makeFile()
                     val uri = FileProvider.getUriForFile(context, context.packageName + ".fileprovider", file)
+                    val viewer = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(uri, "application/pdf")
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    context.startActivity(Intent.createChooser(viewer, "معاينة تقرير رغيف"))
+                }.onFailure {
+                    notice = "تعذرت معاينة PDF: " + (it.localizedMessage ?: "لا يوجد قارئ PDF")
+                }
+            },
+            enabled = enabled,
+            modifier = Modifier.fillMaxWidth()
+        ) { Text("معاينة التقرير PDF") }
+
+        OutlinedButton(
+            onClick = {
+                clickSound()
+                runCatching {
+                    val file = makeFile()
+                    val uri = FileProvider.getUriForFile(context, context.packageName + ".fileprovider", file)
                     val intent = Intent(Intent.ACTION_SEND).apply {
                         type = "application/pdf"
                         putExtra(Intent.EXTRA_STREAM, uri)
