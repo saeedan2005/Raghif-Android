@@ -441,8 +441,13 @@ class MainActivity : ComponentActivity() {
             Stat("إجمالي المباع نقدًا",fmt(list.sumOf{cashSold(it)}))
             Stat("مجموع الفرق",fmt(list.sumOf{difference(it)}))
             Stat("متوسط إنتاج الكيس",ReportMath.averagePiecesPerBag(list)?.let { fmt(it)+" حبة/كيس" } ?: "غير متاح")
-        } ?: if(err==null) {
-            RaghifCreamPanel(Modifier.fillMaxWidth()) { Text("لا توجد سجلات لهذه الفترة.",color=RaghifPalette.TextBrown) }
+        }
+        if(rows == null || rows!!.isEmpty()) {
+            if(err==null) {
+                RaghifCreamPanel(Modifier.fillMaxWidth()) {
+                    Text("لا توجد سجلات لهذه الفترة.",color=RaghifPalette.TextBrown)
+                }
+            }
         }
     }
 }
