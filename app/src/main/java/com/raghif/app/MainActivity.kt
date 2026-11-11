@@ -35,6 +35,7 @@ import com.raghif.app.reports.RaghifPdf
 import com.raghif.app.reports.ReportActions
 import com.raghif.app.reports.ReportMath
 import com.raghif.app.reports.RecordCharts
+import com.raghif.app.reports.FinancialRevenueChart
 import com.raghif.app.ui.RaghifDateField
 import com.raghif.app.ui.LocalRaghifSound
 import com.raghif.app.ui.playRaghifClick
@@ -532,7 +533,7 @@ class MainActivity : ComponentActivity() {
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         RaghifSectionTitle("التقرير المالي — " + b.name)
-        Text("التقرير خاص بالمخبز المحدد فقط. المباع آجل يُحسب بالريال من عدد الحبات وسعر الكيس المثبت في السجل.", fontSize=12.sp, color=Color.Gray)
+        // Internal accounting instruction; do not show in financial UI.
         RaghifDateField("من تاريخ",from,{from=it;rows=null})
         RaghifDateField("إلى تاريخ",to,{to=it;rows=null})
         Button(onClick={
@@ -555,17 +556,15 @@ class MainActivity : ComponentActivity() {
         rows?.takeIf { it.isNotEmpty() }?.let { list ->
             val totalRevenue = list.sumOf { it.revenue.toDouble() }
             val totalCredit = list.sumOf { ReportMath.deferredValue(it) }
-            val totalPieces=list.sumOf { it.pieces }
-            val totalFlour=list.sumOf { it.flourKg }
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(7.dp)) {
                 RaghifMetricCard("إجمالي الإيرادات",fmt(totalRevenue),"ريال",Icons.Default.Paid,Modifier.weight(1f))
-                RaghifMetricCard("إجمالي الإنتاج",fmt(totalPieces),"حبة",Icons.Default.BakeryDining,Modifier.weight(1f))
+                RaghifMetricCard("المبيعات الآجلة",fmt(totalCredit),"ريال",Icons.Default.Payments,Modifier.weight(1f))
             }
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(7.dp)) {
-                RaghifMetricCard("كمية الدقيق",fmt(totalFlour),"كيلو",Icons.Default.Inventory2,Modifier.weight(1f))
+                RaghifMetricCard("إجمالي المبيعات",fmt(totalRevenue+totalCredit),"ريال",Icons.Default.AccountBalanceWallet,Modifier.weight(1f))
                 RaghifMetricCard("عدد السجلات",fmt(list.size),"سجل",Icons.Default.Description,Modifier.weight(1f))
             }
-            RecordCharts(list)
+            FinancialRevenueChart(list)
             RaghifSectionTitle("أعلى النتائج")
             RaghifCreamPanel(Modifier.fillMaxWidth()) {
                 Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
@@ -574,11 +573,7 @@ class MainActivity : ComponentActivity() {
                             fontWeight=FontWeight.Bold,color=RaghifPalette.TextBrown)
                         Text(fmt(record.revenue) + " ريال",color=RaghifPalette.Brown)
                     }
-                    list.maxByOrNull { it.pieces }?.let { record ->
-                        Text("أعلى يوم إنتاجًا: " + prettyDate(record.date),
-                            fontWeight=FontWeight.Bold,color=RaghifPalette.TextBrown)
-                        Text(fmt(record.pieces) + " حبة",color=RaghifPalette.Brown)
-                    }
+
                 }
             }
             RaghifSectionTitle("ملخص المبيعات")
@@ -604,7 +599,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
-            RaghifSectionTitle("تصدير التقرير PDF")
+            // Export controls display their own icons; no redundant title bar.
             ReportActions(
                 fileName="raghif_financial_" + b.id + "_" + normalizedDigits(from) + "_" + normalizedDigits(to),
                 enabled=true,
