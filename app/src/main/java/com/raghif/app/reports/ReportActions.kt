@@ -15,6 +15,15 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Print
+import androidx.compose.ui.unit.dp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedButton
@@ -78,7 +87,7 @@ fun ReportActions(
             },
             enabled = enabled,
             modifier = Modifier.fillMaxWidth()
-        ) { Text("حفظ التقرير PDF") }
+        ) { Icon(Icons.Default.Save,contentDescription=null); Spacer(Modifier.width(8.dp)); Text("حفظ PDF") }
 
         OutlinedButton(
             onClick = {
@@ -97,7 +106,7 @@ fun ReportActions(
             },
             enabled = enabled,
             modifier = Modifier.fillMaxWidth()
-        ) { Text("معاينة التقرير PDF") }
+        ) { Icon(Icons.Default.Visibility,contentDescription=null); Spacer(Modifier.width(8.dp)); Text("معاينة PDF") }
 
         OutlinedButton(
             onClick = {
@@ -115,10 +124,11 @@ fun ReportActions(
             },
             enabled = enabled,
             modifier = Modifier.fillMaxWidth()
-        ) { Text("مشاركة التقرير PDF") }
+        ) { Icon(Icons.Default.Share,contentDescription=null); Spacer(Modifier.width(8.dp)); Text("مشاركة PDF") }
 
         OutlinedButton(
             onClick = {
+                clickSound()
                 runCatching {
                     val file = makeFile()
                     val manager = context.getSystemService(Context.PRINT_SERVICE) as PrintManager
@@ -131,7 +141,7 @@ fun ReportActions(
             },
             enabled = enabled,
             modifier = Modifier.fillMaxWidth()
-        ) { Text("طباعة التقرير") }
+        ) { Icon(Icons.Default.Print,contentDescription=null); Spacer(Modifier.width(8.dp)); Text("طباعة PDF") }
     }
 
     if (notice != null) {
