@@ -98,7 +98,7 @@ fun RaghifHeader(title: String, subtitle: String = "إدارة البيانات 
 }
 
 @Composable
-fun RaghifSectionTitle(title: String) {
+fun RaghifSectionTitle(title: String, sideAligned: Boolean = false) {
     val shape = RoundedCornerShape(23.dp)
     Box(
         modifier = Modifier.fillMaxWidth()
@@ -111,9 +111,13 @@ fun RaghifSectionTitle(title: String) {
             )
             .border(2.dp,RaghifPalette.Golden,shape)
             .padding(horizontal=14.dp,vertical=10.dp),
-        contentAlignment = Alignment.Center
+        contentAlignment = if(sideAligned) Alignment.CenterStart else Alignment.Center
     ) {
-        Text(title, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Text(
+            title, color = Color.White, fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = if(sideAligned) Modifier.padding(start=18.dp) else Modifier
+        )
     }
 }
 
