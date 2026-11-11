@@ -12,6 +12,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -39,7 +43,8 @@ fun BakerySelectionScreen(
     onSettings: () -> Unit,
     onAddBakery: () -> Unit,
     onOpenBakery: (Bakery) -> Unit,
-    onEditBakery: (Bakery) -> Unit
+    onEditBakery: (Bakery) -> Unit,
+    onDeleteBakery: (Bakery) -> Unit
 ) {
     LazyColumn(
         modifier=Modifier.fillMaxWidth(),
@@ -105,7 +110,8 @@ fun BakerySelectionScreen(
                     bakery=bakery,
                     isSelected=bakery.id==selectedBakeryId,
                     onOpen={onOpenBakery(bakery)},
-                    onEdit={onEditBakery(bakery)}
+                    onEdit={onEditBakery(bakery)},
+                    onDelete={onDeleteBakery(bakery)}
                 )
             }
         }
@@ -133,9 +139,11 @@ private fun BakerySelectionCard(
     bakery: Bakery,
     isSelected: Boolean,
     onOpen: () -> Unit,
-    onEdit: () -> Unit
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
     val rounded=RoundedCornerShape(23.dp)
+    var menuOpen by remember(bakery.id) { mutableStateOf(false) }
     Column(
         modifier=Modifier.fillMaxWidth()
             .shadow(if(isSelected) 7.dp else 3.dp,rounded)
@@ -187,8 +195,22 @@ private fun BakerySelectionCard(
                     }
                 }
             }
-            IconButton(onClick=onEdit,modifier=Modifier.size(40.dp)) {
-                Icon(Icons.Default.Edit,"تعديل المخبز",tint=RaghifPalette.Brown)
+            Box {
+                IconButton(onClick={menuOpen=true},modifier=Modifier.size(40.dp)) {
+                    Icon(Icons.Default.MoreVert,"خيارات المخبز",tint=RaghifPalette.Brown)
+                }
+                DropdownMenu(expanded=menuOpen,onDismissRequest={menuOpen=false}) {
+                    DropdownMenuItem(
+                        text={Text("تعديل بيانات المخبز")},
+                        leadingIcon={Icon(Icons.Default.Edit,null)},
+                        onClick={menuOpen=false;onEdit()}
+                    )
+                    DropdownMenuItem(
+                        text={Text("حذف المخبز",color=RaghifPalette.Danger)},
+                        leadingIcon={Icon(Icons.Default.Delete,null,tint=RaghifPalette.Danger)},
+                        onClick={menuOpen=false;onDelete()}
+                    )
+                }
             }
         }
         Button(onClick=onOpen,modifier=Modifier.fillMaxWidth().height(44.dp),
