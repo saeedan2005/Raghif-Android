@@ -42,6 +42,7 @@ import com.raghif.app.ui.RaghifHeader
 import com.raghif.app.ui.RaghifSectionTitle
 import com.raghif.app.ui.RaghifPalette
 import com.raghif.app.ui.RaghifFooter
+import com.raghif.app.ui.RaghifDashboard
 import com.raghif.app.ui.RaghifCreamPanel
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
@@ -143,9 +144,11 @@ class MainActivity : ComponentActivity() {
         Column(Modifier.fillMaxSize().padding(padding).padding(horizontal=8.dp,vertical=4.dp), verticalArrangement=Arrangement.spacedBy(10.dp)) {
             RaghifHeader(when(page) {
                 "bakeries" -> "اختر المخبز"
+                "dashboard" -> selected?.name ?: "لوحة المخبز"
                 "bakeryForm" -> "بيانات المخبز"
                 "daily" -> "إدخال البيانات اليومية"
                 "financial" -> "التقارير المالية"
+                "export" -> "تصدير تقارير PDF"
                 "stats" -> "الإحصاءات"
                 "search" -> "البحث في السجلات"
                 "settings" -> "الإعدادات"
@@ -162,7 +165,7 @@ class MainActivity : ComponentActivity() {
                     LazyColumn(verticalArrangement=Arrangement.spacedBy(8.dp)) {
                         items(bakeries, key={it.id}) { b ->
                             Card(
-                                Modifier.fillMaxWidth().clickable { clickSound(); selected=b; currentRecord=null; navigate("daily") },
+                                Modifier.fillMaxWidth().clickable { clickSound(); selected=b; currentRecord=null; navigate("dashboard") },
                                 shape=RoundedCornerShape(18.dp),
                                 border=BorderStroke(1.dp,RaghifPalette.Golden),
                                 colors=CardDefaults.cardColors(containerColor=if(night) MaterialTheme.colorScheme.surface else RaghifPalette.Paper)
@@ -195,6 +198,9 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 })
+                "dashboard" -> selected?.let { b ->
+                    RaghifDashboard(db,b,onDaily={currentRecord=null;navigate("daily")},onStats={navigate("stats")},onFinancial={navigate("financial")},onSearch={navigate("search")},onHistory={navigate("search")},onExport={navigate("export")})
+                }
                 "daily" -> selected?.let { b ->
                     DailyScreen(db,b,currentRecord,onChoose={currentRecord=it},onNew={currentRecord=null},onSaved={currentRecord=it;message="تم حفظ السجل اليومي.";},onStats={clickSound();navigate("stats")},onFinancial={clickSound();navigate("financial")},onSearch={clickSound();navigate("search")},message={message=it})
                 }
