@@ -38,6 +38,8 @@ import com.raghif.app.ui.playRaghifClick
 import com.raghif.app.ui.RaghifHeader
 import com.raghif.app.ui.RaghifSectionTitle
 import com.raghif.app.ui.RaghifPalette
+import com.raghif.app.ui.RaghifFooter
+import com.raghif.app.ui.RaghifCreamPanel
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.time.LocalDate
@@ -131,10 +133,11 @@ class MainActivity : ComponentActivity() {
     var reportRows by remember { mutableStateOf<List<DailyRecord>>(emptyList()) }
 
     CompositionLocalProvider(LocalRaghifSound provides clickSound) {
-    Scaffold(containerColor=MaterialTheme.colorScheme.background, topBar={
-        TopAppBarRaghif(title=when(page) { "bakeries"->"قائمة المخابز"; "bakeryForm"->if(editingBakery==null) "إنشاء مخبز جديد" else "تعديل المخبز"; "daily"->selected?.name ?: "البيانات اليومية"; "stats"->"الإحصاءات"; "financial"->"التقرير المالي"; "search"->"البحث في السجلات"; "settings"->"الإعدادات"; else->"رغيف" }, onBack={clickSound(); goBack()}, showBack=page!="bakeries")
-    }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).padding(12.dp), verticalArrangement=Arrangement.spacedBy(12.dp)) {
+    Scaffold(
+        containerColor = if(night) MaterialTheme.colorScheme.background else RaghifPalette.Paper,
+        bottomBar = { RaghifFooter(isHome=page=="bakeries",onBack={clickSound();goBack()}) }
+    ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding).padding(horizontal=8.dp,vertical=4.dp), verticalArrangement=Arrangement.spacedBy(10.dp)) {
             RaghifHeader(when(page) {
                 "bakeries" -> "اختر المخبز"
                 "bakeryForm" -> "بيانات المخبز"
