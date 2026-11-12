@@ -114,27 +114,29 @@ fun RaghifHeader(title: String, subtitle: String = "إدارة البيانات 
     }
 }
 
+/**
+ * Section labels have an intrinsic width; the gold plaque is no longer
+ * stretched across the whole phone. Start-alignment in RTL is the right edge.
+ */
 @Composable
-fun RaghifSectionTitle(title: String, sideAligned: Boolean = false) {
-    val shape = RoundedCornerShape(23.dp)
-    Box(
-        modifier = Modifier.fillMaxWidth()
-            .padding(horizontal = 6.dp)
-            .shadow(5.dp,shape)
-            .background(
-                Brush.verticalGradient(
-                    listOf(RaghifPalette.Orange, RaghifPalette.Brown, RaghifPalette.DeepBrown)
-                ), shape
-            )
-            .border(2.dp,RaghifPalette.Golden,shape)
-            .padding(horizontal=14.dp,vertical=10.dp),
-        contentAlignment = if(sideAligned) Alignment.CenterStart else Alignment.Center
-    ) {
-        Text(
-            title, color = Color.White, fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = if(sideAligned) Modifier.padding(start=18.dp) else Modifier
-        )
+fun RaghifSectionTitle(title: String, sideAligned: Boolean = true) {
+    val shape=RoundedCornerShape(topStart=16.dp,topEnd=16.dp,bottomStart=16.dp,bottomEnd=16.dp)
+    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.Start) {
+        Box(
+            Modifier
+                .padding(start=5.dp,top=3.dp,bottom=3.dp)
+                .shadow(4.dp,shape)
+                .background(
+                    Brush.verticalGradient(
+                        listOf(RaghifPalette.Orange,RaghifPalette.Brown,RaghifPalette.DeepBrown)
+                    ),shape
+                )
+                .border(1.5.dp,RaghifPalette.Golden,shape)
+                .padding(horizontal=23.dp,vertical=8.dp),
+            contentAlignment=Alignment.Center
+        ) {
+            Text(title,color=Color.White,fontSize=18.sp,fontWeight=FontWeight.Bold)
+        }
     }
 }
 
@@ -179,40 +181,49 @@ fun RaghifGoldWaves() {
 }
 
 
+/**
+ * Compact stationary navigation strip: no oversized decorative wave beneath
+ * the page, keeping controls visible on short Android screens.
+ */
 @Composable
 fun RaghifFooter(isHome: Boolean, onBack: () -> Unit) {
-    Column(Modifier.fillMaxWidth()) {
-        RaghifGoldWaves()
-        Row(
-            Modifier.fillMaxWidth()
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(RaghifPalette.DeepBrown,RaghifPalette.Brown,RaghifPalette.DeepBrown)
-                    )
-                )
-                .padding(horizontal=12.dp,vertical=5.dp),
-            verticalAlignment=Alignment.CenterVertically,
-            horizontalArrangement=Arrangement.spacedBy(10.dp)
-        ) {
-            Text(
-                "إعداد التطبيق: عبدالعزيز سعيدان",
-                fontSize=12.sp,
-                color=RaghifPalette.Cream,
-                modifier=Modifier.weight(1f)
+    val shape=RoundedCornerShape(topStart=22.dp,topEnd=22.dp)
+    Row(
+        Modifier.fillMaxWidth()
+            .shadow(3.dp,shape)
+            .background(
+                Brush.horizontalGradient(
+                    listOf(RaghifPalette.DeepBrown,RaghifPalette.Brown,RaghifPalette.DeepBrown)
+                ),shape
             )
-            OutlinedButton(
-                onClick=onBack,
-                border=androidx.compose.foundation.BorderStroke(1.5.dp,RaghifPalette.LightGold),
-                shape=RoundedCornerShape(20.dp),
-                colors=ButtonDefaults.outlinedButtonColors(contentColor=Color.White),
-            ) {
-                Text(if(isHome) "خروج" else "رجوع",fontWeight=FontWeight.Bold)
-                Icon(
-                    if(isHome) Icons.Default.Logout else Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription=null,
-                    modifier=Modifier.padding(start=5.dp)
-                )
-            }
+            .border(
+                androidx.compose.foundation.BorderStroke(0.7.dp,RaghifPalette.Golden),
+                shape
+            )
+            .padding(start=14.dp,end=14.dp,top=8.dp,bottom=8.dp),
+        verticalAlignment=Alignment.CenterVertically,
+        horizontalArrangement=Arrangement.spacedBy(12.dp)
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text("رغيف • إدارة المخابز",fontSize=10.sp,color=RaghifPalette.LightGold,
+                fontWeight=FontWeight.SemiBold)
+            Text("إعداد التطبيق: عبدالعزيز سعيدان",
+                fontSize=10.sp,color=RaghifPalette.Cream,maxLines=1)
+        }
+        OutlinedButton(
+            onClick=onBack,
+            border=androidx.compose.foundation.BorderStroke(1.dp,RaghifPalette.LightGold),
+            shape=RoundedCornerShape(18.dp),
+            colors=ButtonDefaults.outlinedButtonColors(contentColor=Color.White),
+            modifier=Modifier.height(40.dp),
+            contentPadding=androidx.compose.foundation.layout.PaddingValues(horizontal=11.dp,vertical=3.dp)
+        ) {
+            Text(if(isHome) "خروج" else "رجوع",fontSize=13.sp,fontWeight=FontWeight.Bold)
+            Spacer(Modifier.width(5.dp))
+            Icon(
+                if(isHome) Icons.Default.Logout else Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription=null,modifier=Modifier.height(17.dp)
+            )
         }
     }
 }
