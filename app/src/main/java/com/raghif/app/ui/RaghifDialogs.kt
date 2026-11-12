@@ -57,13 +57,14 @@ fun RaghifExitDialog(onConfirm:()->Unit,onDismiss:()->Unit) {
         text={Text("هل أنت متأكد من الخروج من التطبيق؟",
             color=RaghifPalette.TextBrown)},
         confirmButton={
-            Button(onClick=onConfirm,shape=RoundedCornerShape(14.dp),
+            Button(onClick=onConfirm,modifier=Modifier.padding(horizontal=5.dp),shape=RoundedCornerShape(14.dp),
                 colors=ButtonDefaults.buttonColors(containerColor=RaghifPalette.Brown)) {
                 Text("نعم، خروج",color=Color.White)
             }
         },
         dismissButton={
             OutlinedButton(onClick=onDismiss,
+                modifier=Modifier.padding(horizontal=5.dp),
                 border=BorderStroke(1.dp,RaghifPalette.GoldBorder),
                 shape=RoundedCornerShape(14.dp)) {
                 Text("البقاء في التطبيق",color=RaghifPalette.TextBrown)
