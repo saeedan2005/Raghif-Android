@@ -38,7 +38,6 @@ import com.raghif.app.data.Bakery
 fun BakerySelectionScreen(
     bakeries: List<Bakery>,
     selectedBakeryId: Long?,
-    onSettings: () -> Unit,
     onAddBakery: () -> Unit,
     onOpenBakery: (Bakery) -> Unit,
     onEditBakery: (Bakery) -> Unit,
@@ -47,7 +46,7 @@ fun BakerySelectionScreen(
     LazyColumn(
         modifier=Modifier.fillMaxWidth(),
         verticalArrangement=Arrangement.spacedBy(12.dp),
-        contentPadding=PaddingValues(start=8.dp,end=8.dp,top=4.dp,bottom=16.dp)
+        contentPadding=PaddingValues(start=8.dp,end=8.dp,top=0.dp,bottom=16.dp)
     ) {
         item {
             Column(
@@ -57,17 +56,6 @@ fun BakerySelectionScreen(
                 ),
                 horizontalAlignment=Alignment.CenterHorizontally
             ) {
-                // RTL: Alignment.CenterEnd is the physical left side.
-                // Keep the settings gear on the left per the approved mock-up.
-                Box(Modifier.fillMaxWidth().padding(vertical=4.dp,horizontal=12.dp)) {
-                    IconButton(
-                        onClick=onSettings,
-                        modifier=Modifier.align(Alignment.CenterEnd)
-                    ) {
-                        Icon(Icons.Default.Settings,"الإعدادات",
-                            tint=RaghifPalette.DeepBrown,modifier=Modifier.size(34.dp))
-                    }
-                }
                 RaghifUncroppedImage(
                     drawableId=R.drawable.raghif_original_header,
                     description="رغيف، سنابل القمح والفرن",
@@ -79,7 +67,7 @@ fun BakerySelectionScreen(
                 Text("اختر المخبز لعرض سجلاته وبياناته اليومية",
                     fontSize=13.sp,color=RaghifPalette.Brown,textAlign=TextAlign.Center)
                 Spacer(Modifier.height(10.dp))
-                RaghifGoldWaves()
+                BakeryListDivider()
             }
         }
 
@@ -222,5 +210,48 @@ private fun BakerySelectionCard(
             Spacer(Modifier.width(8.dp))
             Icon(Icons.Default.Storefront,null,modifier=Modifier.size(19.dp))
         }
+    }
+}
+
+
+/** Ornamental gold separator between the bakery selector heading and saved bakeries. */
+@Composable
+private fun BakeryListDivider() {
+    Row(
+        modifier=Modifier.fillMaxWidth().padding(horizontal=20.dp,vertical=9.dp),
+        verticalAlignment=Alignment.CenterVertically,
+        horizontalArrangement=Arrangement.spacedBy(10.dp)
+    ) {
+        Box(
+            Modifier.weight(1f).height(2.dp)
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(RaghifPalette.Golden,RaghifPalette.Orange,RaghifPalette.LightGold)
+                    ), RoundedCornerShape(8.dp)
+                )
+        )
+        Box(
+            modifier=Modifier.size(45.dp)
+                .shadow(3.dp,RoundedCornerShape(16.dp))
+                .background(
+                    Brush.verticalGradient(
+                        listOf(RaghifPalette.LightGold,RaghifPalette.Golden,RaghifPalette.Orange)
+                    ),
+                    RoundedCornerShape(16.dp)
+                )
+                .border(1.5.dp,RaghifPalette.Brown,RoundedCornerShape(16.dp)),
+            contentAlignment=Alignment.Center
+        ) {
+            Icon(Icons.Default.BakeryDining,contentDescription=null,
+                tint=RaghifPalette.DeepBrown,modifier=Modifier.size(27.dp))
+        }
+        Box(
+            Modifier.weight(1f).height(2.dp)
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(RaghifPalette.LightGold,RaghifPalette.Orange,RaghifPalette.Golden)
+                    ), RoundedCornerShape(8.dp)
+                )
+        )
     }
 }
