@@ -114,7 +114,8 @@ fun RaghifExportScreen(database:AppDatabase,bakery:Bakery) {
         }
         ReportActions(
             fileName=if(dailyReport) ReportFileNames.daily(bakery.name,singleDay)
-                     else ReportFileNames.financial(from,to),
+                     else runCatching { ReportFileNames.financial(from,to) }
+                         .getOrDefault("الايرادات_المالية_للفترة"),
             enabled=ready,
             createPdf={context->
                 if(dailyReport) {
