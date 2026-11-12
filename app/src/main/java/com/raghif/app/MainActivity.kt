@@ -37,6 +37,9 @@ import com.raghif.app.data.*
 import com.raghif.app.reports.RaghifPdf
 import com.raghif.app.reports.ReportActions
 import com.raghif.app.reports.ReportMath
+import com.raghif.app.reports.ReportFileNames
+import com.raghif.app.ui.RaghifNoticeDialog
+import com.raghif.app.ui.RaghifExitDialog
 import com.raghif.app.reports.RecordCharts
 import com.raghif.app.reports.FinancialRevenueChart
 import com.raghif.app.ui.RaghifDateField
@@ -223,15 +226,12 @@ class MainActivity : ComponentActivity() {
             dismissButton={TextButton(onClick={pendingDeleteBakery=null}) { Text("إلغاء") }}
         )
     }
-    if(confirmExit) AlertDialog(
-        onDismissRequest={confirmExit=false},
-        title={Text("الخروج من رغيف")},
-        text={Text("هل أنت متأكد من الخروج من التطبيق؟")},
-        confirmButton={TextButton(onClick={confirmExit=false;(context as? android.app.Activity)?.finish()}) { Text("خروج") }},
-        dismissButton={TextButton(onClick={confirmExit=false}) { Text("إلغاء") }}
+    if(confirmExit) RaghifExitDialog(
+        onDismiss={confirmExit=false},
+        onConfirm={confirmExit=false;(context as? android.app.Activity)?.finish()}
     )
     }
-    if(message!=null) AlertDialog(onDismissRequest={message=null}, confirmButton={TextButton(onClick={message=null}){Text("موافق")} }, title={Text("رغيف")}, text={Text(message.orEmpty())})
+    message?.let { RaghifNoticeDialog(it,onDismiss={message=null}) }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -307,11 +307,10 @@ class MainActivity : ComponentActivity() {
                     }
                 })
                 Text("اليوم: " + dayName(date),color=RaghifPalette.TextBrown,fontWeight=FontWeight.Bold)
-                Text(
-                    if(initial==null) "سجل مستقل جديد للتاريخ المختار"
-                    else "السجل المحفوظ لهذا التاريخ — رقم " + initial.id,
-                    color=RaghifPalette.Brown,fontSize=12.sp
-                )
+                if(initial!=null) {
+                    Text("السجل المحفوظ لهذا التاريخ — رقم " + initial.id,
+                        color=RaghifPalette.Brown,fontSize=12.sp)
+                }
             }
         }
         RaghifSectionTitle("بيانات الإنتاج")
@@ -343,7 +342,6 @@ class MainActivity : ComponentActivity() {
             RaghifMetricCard("الفرق",fmt(difference(preview)),"حبة",Icons.Default.BakeryDining,Modifier.weight(1f))
             RaghifMetricCard("متوسط الكيس",avgBag(preview)?.let{fmt(it)}?:"—","حبة",Icons.Default.Inventory2,Modifier.weight(1f))
         }
-        RaghifSectionTitle("حفظ السجل")
         Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
             Button(onClick={
                 tap()
@@ -368,14 +366,15 @@ class MainActivity : ComponentActivity() {
             OutlinedButton(onClick={tap();onNew()},modifier=Modifier.weight(1f).height(52.dp)){Text("سجل جديد")}
         }
         
-        if(initial!=null) {
-            Text("تقرير PDF للسجل المحفوظ", fontWeight=FontWeight.Bold, color=brown)
-            ReportActions(
-                fileName="raghif_daily_" + bakery.id + "_" + initial.date,
-                enabled=true,
-                createPdf={ context -> RaghifPdf.daily(context, bakery, initial) }
-            )
-        }
+        Text("تقرير PDF للسجل المحفوظ",
+            fontWeight=FontWeight.Bold,color=brown)
+        ReportActions(
+            fileName=ReportFileNames.daily(bakery.name,initial?.date ?: date),
+            enabled=initial!=null,
+            createPdf={ ctx ->
+                RaghifPdf.daily(ctx,bakery,requireNotNull(initial))
+            }
+        )
     }
     if(showHistory) AlertDialog(onDismissRequest={showHistory=false},title={Text("السجلات السابقة")},text={Column(Modifier.heightIn(max=400.dp).verticalScroll(rememberScrollState())){history.forEach { r -> TextButton(onClick={showHistory=false;onChoose(r)}){Text("${prettyDate(r.date)} — الإيراد ${fmt(r.revenue)} ريال")} } }},confirmButton={TextButton(onClick={showHistory=false}){Text("إغلاق")}})
 }
@@ -604,7 +603,7 @@ class MainActivity : ComponentActivity() {
             }
             // Export controls display their own icons; no redundant title bar.
             ReportActions(
-                fileName="raghif_financial_" + b.id + "_" + normalizedDigits(from) + "_" + normalizedDigits(to),
+                fileName=runCatching { ReportFileNames.financial(normalizedDigits(from),normalizedDigits(to)) }.getOrDefault("الايرادات_المالية_للفترة"),
                 enabled=true,
                 createPdf={ context -> RaghifPdf.financial(context,b,list,normalizedDigits(from),normalizedDigits(to)) }
             )
