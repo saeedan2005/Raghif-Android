@@ -54,6 +54,7 @@ import com.raghif.app.ui.BakerySelectionScreen
 import com.raghif.app.ui.RaghifExportScreen
 import com.raghif.app.ui.RaghifMetricCard
 import com.raghif.app.ui.RaghifCreamPanel
+import com.raghif.app.ui.RaghifDisplayNumber
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.time.LocalDate
@@ -68,7 +69,7 @@ private val dbFmt = DateTimeFormatter.ISO_LOCAL_DATE
 private val uiFmt = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 private fun today() = LocalDate.now().format(dbFmt)
 private fun prettyDate(s: String) = runCatching { LocalDate.parse(s).format(uiFmt) }.getOrDefault(s)
-private fun fmt(n: Number): String = NumberFormat.getNumberInstance(Locale.US).format(n)
+private fun fmt(n: Number): String = RaghifDisplayNumber.format(n)
 private fun dayName(s: String) = runCatching { LocalDate.parse(s).dayOfWeek.getDisplayName(TextStyle.FULL, ar) }.getOrDefault("")
 private fun normalizedDigits(s: String) = s.trim().map { ch ->
     when(ch) {
@@ -146,9 +147,20 @@ class MainActivity : ComponentActivity() {
     CompositionLocalProvider(LocalRaghifSound provides clickSound) {
     Scaffold(
         containerColor = if(night) Color.Black else RaghifPalette.Paper,
-        bottomBar = { RaghifFooter(isHome=page=="bakeries",onBack={clickSound();goBack()}) }
+        bottomBar = {
+            RaghifFooter(
+                isHome=page=="bakeries",
+                onBack={clickSound();goBack()},
+                onSettings={clickSound();navigate("settings")}
+            )
+        }
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).padding(horizontal=8.dp,vertical=4.dp), verticalArrangement=Arrangement.spacedBy(10.dp)) {
+        Column(
+            Modifier.fillMaxSize().padding(padding)
+                .padding(horizontal=8.dp)
+                .padding(top=if(page=="bakeries") 0.dp else 4.dp,bottom=4.dp),
+            verticalArrangement=Arrangement.spacedBy(10.dp)
+        ) {
             if(page != "bakeries") RaghifHeader(when(page) {
                 "bakeries" -> "اختر المخبز"
                 "dashboard" -> selected?.name ?: "لوحة المخبز"
@@ -168,7 +180,6 @@ class MainActivity : ComponentActivity() {
                 "bakeries" -> BakerySelectionScreen(
                     bakeries=bakeries,
                     selectedBakeryId=selected?.id,
-                    onSettings={clickSound();navigate("settings")},
                     onAddBakery={clickSound();editingBakery=null;navigate("bakeryForm")},
                     onOpenBakery={b ->
                         clickSound()
@@ -326,7 +337,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        RaghifSectionTitle("بيانات المبيعات والمصروفات")
+        RaghifSectionTitle("بيانات المبيعات")
         RaghifCreamPanel(Modifier.fillMaxWidth()) {
             Column(verticalArrangement=Arrangement.spacedBy(5.dp)) {
                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
@@ -722,7 +733,7 @@ class MainActivity : ComponentActivity() {
                 }
                 Column(horizontalAlignment=Alignment.CenterHorizontally) {
                     Text("إصدار التطبيق",fontSize=13.sp,color=RaghifPalette.TextBrown)
-                    Text("v1.0.2",fontWeight=FontWeight.Bold,color=RaghifPalette.Brown)
+                    Text("v1.0.4",fontWeight=FontWeight.Bold,color=RaghifPalette.Brown)
                 }
             }
         }
