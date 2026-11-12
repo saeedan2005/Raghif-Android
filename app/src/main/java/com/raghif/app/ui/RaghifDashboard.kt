@@ -27,7 +27,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.raghif.app.data.AppDatabase
 import com.raghif.app.data.Bakery
-import java.text.NumberFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -51,7 +50,6 @@ fun RaghifDashboard(
     val records by db.dailyDao().observe(bakery.id).collectAsState(initial=emptyList())
     val latest = records.firstOrNull()
     val tap=LocalRaghifSound.current
-    val currency=NumberFormat.getNumberInstance(Locale.US)
     val dateText=LocalDate.now().format(
         DateTimeFormatter.ofPattern("EEEE، d MMMM yyyy",Locale("ar","YE"))
     )
@@ -114,10 +112,10 @@ fun RaghifDashboard(
                     DashboardValue("التاريخ",latest!!.date,Icons.Default.CalendarMonth,
                         modifier=Modifier.weight(1f))
                     Box(Modifier.width(1.dp).height(72.dp).background(RaghifPalette.Brown))
-                    DashboardValue("عدد الحبات",currency.format(latest!!.pieces)+" حبة",
+                    DashboardValue("عدد الحبات",RaghifDisplayNumber.format(latest!!.pieces)+" حبة",
                         Icons.Default.BakeryDining,modifier=Modifier.weight(1f))
                     Box(Modifier.width(1.dp).height(72.dp).background(RaghifPalette.Brown))
-                    DashboardValue("الإيراد",currency.format(latest!!.revenue)+" ريال",
+                    DashboardValue("الإيراد",RaghifDisplayNumber.format(latest!!.revenue)+" ريال",
                         Icons.Default.Paid,modifier=Modifier.weight(1f))
                 }
             }
