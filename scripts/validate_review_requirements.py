@@ -27,7 +27,9 @@ require('onNightChange(!night)' not in s["main"],"Night toggle must be settings-
 require('containerColor = if(night) Color.Black else RaghifPalette.Paper' in s["main"],
         "Night mode must change only the application background")
 require("darkColorScheme(" not in s["main"],"Do not recolor buttons in night mode")
-require("Alignment.CenterEnd" in s["list"],"Settings gear must be at left edge in RTL")
+require("onSettings:" not in s["list"],"Home settings icon must no longer appear above bakery image")
+require('onSettings={clickSound();navigate("settings")}' in s["main"],
+        "Home settings icon must be connected to footer navigation")
 settings=s["main"].split("@Composable private fun SettingsScreen(",1)[-1]
 finance=s["main"].split("@Composable private fun FinancialScreen(",1)[-1].split("@Composable private fun TableCell(",1)[0]
 require("تحديث البيانات تلقائيًا" not in settings,"Remove redundant automatic updates setting")
@@ -60,6 +62,29 @@ require('ReportFileNames.daily' in s["main"],"Daily PDF must use Arabic filename
 require("RaghifSectionTitle(\"نوع التقرير\")" in
         (root/"app/src/main/java/com/raghif/app/ui/RaghifExportScreen.kt").read_text(),
         "Use singular report type title")
+
+# Version 1.0.4: visual polish and display precision, without changing data.
+require('RaghifSectionTitle(title, sideAligned = false)' in s["brand"],
+        "Only top-level page headings must be centered")
+require('horizontalArrangement=if(sideAligned) Arrangement.Start else Arrangement.Center' in s["brand"],
+        "Secondary section titles must remain right-aligned in RTL")
+require('RaghifFooter(' in s["main"] and 'onSettings={clickSound();navigate("settings")}' in s["main"],
+        "Settings icon should be in the home footer next to exit")
+require('RaghifGoldWaves()' not in s["list"] and 'BakeryListDivider()' in s["list"],
+        "Use redesigned golden divider above saved bakeries")
+require(s["list"].index("RaghifUncroppedImage(") < s["list"].index('Text("اختر المخبز"'),
+        "Original bakery hero image must appear before heading")
+require('RaghifSectionTitle("بيانات المبيعات")' in s["main"] and
+        "بيانات المبيعات والمصروفات" not in s["main"],
+        "Sales section should use the approved shorter name")
+dialogs=(root/"app/src/main/java/com/raghif/app/ui/RaghifDialogs.kt").read_text()
+require("Modifier.padding(horizontal=5.dp)" in dialogs,
+        "Exit dialog buttons must have a small horizontal gap")
+formatter=(root/"app/src/main/java/com/raghif/app/ui/RaghifDisplayNumber.kt").read_text()
+pdf=(root/"app/src/main/java/com/raghif/app/reports/RaghifPdf.kt").read_text()
+require("maximumFractionDigits = 1" in formatter and
+        "maximumFractionDigits = 1" in pdf,
+        "All displayed numbers (including PDF) must have no more than one decimal")
 
 if issues:
     print("\n".join(issues),file=sys.stderr)
