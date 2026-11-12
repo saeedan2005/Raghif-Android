@@ -2,7 +2,8 @@
     <application
         android:allowBackup="false"
         android:label="رغيف"
-        android:icon="@drawable/ic_raghif"
+        android:icon="@drawable/raghif_logo_icon"
+        android:roundIcon="@drawable/raghif_logo_icon"
         android:supportsRtl="true"
         android:theme="@style/Theme.Raghif">
         <activity
@@ -14,5 +15,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 </manifest>
