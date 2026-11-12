@@ -1,0 +1,59 @@
+{
+  "source": "User-supplied original Raghif screenshots (full image; do not crop, stretch, resample, or recompress)",
+  "entries": [
+    {
+      "file": "إعدادات تطبيق رغيف للمخابز.png",
+      "width": 1024,
+      "height": 1536,
+      "sha256": "0eb306901ae05256fe1b66ac34b87cf6518b08fb46b84cef1903fd9cad27744e"
+    },
+    {
+      "file": "التقارير المالية لمخبز الرحمة.png",
+      "width": 1024,
+      "height": 1536,
+      "sha256": "427db1244bda3013b1c9a942c0239e74f0b161cb6c76f07ef385da92d966aaac"
+    },
+    {
+      "file": "تقرير مالي لمخبز باب خير.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "d22134e4230a20022f3ddef3e06a13361034cab1eb37ec7444e9867903d97052"
+    },
+    {
+      "file": "لوحة إحصاءات مخبز الرحمة.png",
+      "width": 1024,
+      "height": 1536,
+      "sha256": "222ec44a4dd4ceab32b3fda7f5e6710e2f80d33c33d8c87d344c950417c2ce8e"
+    },
+    {
+      "file": "لوحة رغيف لإدارة المخابز اليومية.png",
+      "width": 1024,
+      "height": 1536,
+      "sha256": "2d2c32db0d668151a15a9ba2eef0128000fe2367063152a25100a7ef90ffda7f"
+    },
+    {
+      "file": "واجهة البحث في سجلات المخبز.png",
+      "width": 1024,
+      "height": 1536,
+      "sha256": "16f00d7c04dd08816d8d5e2bc2dd0a5a5fb02e546e1e4dc7c831ebeb267dbfff"
+    },
+    {
+      "file": "واجهة تصدير تقارير المخبز بالعربية.png",
+      "width": 1024,
+      "height": 1536,
+      "sha256": "da697bba8593018a5f15313e02316f577bc0b5da1a52f54c9d14f1e1c901a376"
+    },
+    {
+      "file": "واجهة تطبيق رغيف لإدارة المخابز.png",
+      "width": 1024,
+      "height": 1536,
+      "sha256": "c53bdf1b0a091f59e1db82465fbeca647956b3a66d581ab7d6452545da61fcf7"
+    },
+    {
+      "file": "واجهة تطبيق رغيف لإدارة المخبز.png",
+      "width": 1024,
+      "height": 1536,
+      "sha256": "636fdc8aee3634a5979cc21a39f052a8a3764f25a445877a449f33a494565827"
+    }
+  ]
+}
