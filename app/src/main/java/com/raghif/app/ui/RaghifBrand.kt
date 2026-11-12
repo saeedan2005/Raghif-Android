@@ -26,6 +26,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
@@ -110,7 +112,7 @@ fun RaghifHeader(title: String, subtitle: String = "إدارة البيانات 
             drawableId = R.drawable.raghif_original_header,
             description = "الشعار مع سنابل القمح والخبز والفرن"
         )
-        RaghifSectionTitle(title)
+        RaghifSectionTitle(title, sideAligned = false)
     }
 }
 
@@ -121,7 +123,7 @@ fun RaghifHeader(title: String, subtitle: String = "إدارة البيانات 
 @Composable
 fun RaghifSectionTitle(title: String, sideAligned: Boolean = true) {
     val shape=RoundedCornerShape(topStart=16.dp,topEnd=16.dp,bottomStart=16.dp,bottomEnd=16.dp)
-    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.Start) {
+    Row(Modifier.fillMaxWidth(),horizontalArrangement=if(sideAligned) Arrangement.Start else Arrangement.Center) {
         Box(
             Modifier
                 .padding(start=5.dp,top=3.dp,bottom=3.dp)
@@ -186,7 +188,7 @@ fun RaghifGoldWaves() {
  * the page, keeping controls visible on short Android screens.
  */
 @Composable
-fun RaghifFooter(isHome: Boolean, onBack: () -> Unit) {
+fun RaghifFooter(isHome: Boolean, onBack: () -> Unit, onSettings: () -> Unit = {}) {
     val shape=RoundedCornerShape(topStart=22.dp,topEnd=22.dp)
     Row(
         Modifier.fillMaxWidth()
@@ -209,6 +211,24 @@ fun RaghifFooter(isHome: Boolean, onBack: () -> Unit) {
                 fontWeight=FontWeight.SemiBold)
             Text("إعداد التطبيق: عبدالعزيز سعيدان",
                 fontSize=10.sp,color=RaghifPalette.Cream,maxLines=1)
+        }
+        if(isHome) {
+            IconButton(
+                onClick=onSettings,
+                modifier=Modifier
+                    .size(40.dp)
+                    .border(
+                        androidx.compose.foundation.BorderStroke(1.dp,RaghifPalette.LightGold),
+                        RoundedCornerShape(15.dp)
+                    )
+            ) {
+                Icon(
+                    Icons.Default.Settings,
+                    contentDescription="الإعدادات",
+                    tint=RaghifPalette.Cream,
+                    modifier=Modifier.size(23.dp)
+                )
+            }
         }
         OutlinedButton(
             onClick=onBack,
