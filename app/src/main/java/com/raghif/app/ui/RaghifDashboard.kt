@@ -122,16 +122,7 @@ fun RaghifDashboard(
                 }
             }
         }
-        RaghifCreamPanel(Modifier.fillMaxWidth()) {
-            Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-                Icon(Icons.Default.Lightbulb,contentDescription=null,
-                    tint=RaghifPalette.Orange,modifier=Modifier.size(30.dp))
-                Spacer(Modifier.width(10.dp))
-                Text("مع رغيف.. إدارة أسهل لمخبز أكثر نجاحًا",
-                    color=RaghifPalette.TextBrown,
-                    fontSize=14.sp,fontWeight=FontWeight.Bold)
-            }
-        }
+
     }
 }
 
