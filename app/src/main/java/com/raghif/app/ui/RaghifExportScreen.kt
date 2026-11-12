@@ -2,6 +2,20 @@ package com.raghif.app.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.border
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.RadioButton
+import androidx.compose.ui.unit.sp
+import androidx.compose.material3.ButtonDefaults
+import com.raghif.app.reports.ReportFileNames
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -53,19 +67,15 @@ fun RaghifExportScreen(database:AppDatabase,bakery:Bakery) {
                 Text("التقرير خاص بالمخبز المحدد فقط",color=RaghifPalette.TextBrown)
             }
         }
-        RaghifSectionTitle("أنواع التقارير")
+        RaghifSectionTitle("نوع التقرير")
         RaghifCreamPanel(Modifier.fillMaxWidth()) {
-            Column(verticalArrangement=Arrangement.spacedBy(7.dp)) {
-                Button(
-                    onClick={tap();dailyReport=true;showPreview=false},
-                    modifier=Modifier.fillMaxWidth(),
-                    enabled=!dailyReport
-                ) { Text("تقرير السجل اليومي — يوم واحد") }
-                Button(
-                    onClick={tap();dailyReport=false;showPreview=false},
-                    modifier=Modifier.fillMaxWidth(),
-                    enabled=dailyReport
-                ) { Text("التقرير المالي — ملخص فترة") }
+            Column(verticalArrangement=Arrangement.spacedBy(9.dp)) {
+                ReportTypeOption("تقرير السجل اليومي",dailyReport) {
+                    tap();dailyReport=true;showPreview=false
+                }
+                ReportTypeOption("التقرير المالي",!dailyReport) {
+                    tap();dailyReport=false;showPreview=false
+                }
             }
         }
         RaghifSectionTitle(if(dailyReport) "التاريخ" else "الفترة الزمنية")
@@ -103,8 +113,8 @@ fun RaghifExportScreen(database:AppDatabase,bakery:Bakery) {
             }
         }
         ReportActions(
-            fileName=if(dailyReport) "raghif_daily_" + bakery.id + "_" + singleDay
-                     else "raghif_financial_" + bakery.id + "_" + from + "_" + to,
+            fileName=if(dailyReport) ReportFileNames.daily(bakery.name,singleDay)
+                     else ReportFileNames.financial(from,to),
             enabled=ready,
             createPdf={context->
                 if(dailyReport) {
@@ -114,9 +124,35 @@ fun RaghifExportScreen(database:AppDatabase,bakery:Bakery) {
                 }
             }
         )
-        RaghifCreamPanel(Modifier.fillMaxWidth()) {
-            Text("ملاحظة: التقرير خاص بالمخبز المحدد، وتتم المشاركة بملف PDF وليس برسالة نصية.",
-                color=RaghifPalette.TextBrown)
+
+    }
+}
+
+@Composable
+private fun ReportTypeOption(label:String,selected:Boolean,onClick:()->Unit) {
+    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.Start) {
+        Row(
+            modifier=Modifier
+                .background(
+                    if(selected) RaghifPalette.Brown else RaghifPalette.Cream,
+                    RoundedCornerShape(18.dp)
+                )
+                .border(
+                    1.dp,
+                    if(selected) RaghifPalette.Golden else RaghifPalette.GoldBorder,
+                    RoundedCornerShape(18.dp)
+                )
+                .clickable(onClick=onClick)
+                .padding(horizontal=10.dp,vertical=2.dp),
+            verticalAlignment=Alignment.CenterVertically
+        ) {
+            RadioButton(selected=selected,onClick=onClick,
+                colors=androidx.compose.material3.RadioButtonDefaults.colors(
+                    selectedColor=RaghifPalette.LightGold,
+                    unselectedColor=RaghifPalette.Brown
+                ))
+            Text(label,fontWeight=FontWeight.Bold,fontSize=14.sp,
+                color=if(selected) Color.White else RaghifPalette.TextBrown)
         }
     }
 }
