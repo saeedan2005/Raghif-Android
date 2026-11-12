@@ -40,8 +40,9 @@ object RaghifPdf {
     private val gold = Color.rgb(245, 177, 49)
     private val pale = Color.rgb(255, 246, 226)
     private val numberFormat = NumberFormat.getNumberInstance(Locale("ar")).apply {
-        maximumFractionDigits = 2
+        maximumFractionDigits = 1
         minimumFractionDigits = 0
+        roundingMode = java.math.RoundingMode.HALF_UP
     }
 
     fun financial(context: Context, bakery: Bakery, records: List<DailyRecord>, from: String, to: String): ByteArray {
