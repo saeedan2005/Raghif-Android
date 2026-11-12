@@ -117,6 +117,19 @@ fun BakerySelectionScreen(
                 Icon(Icons.Default.Add,null,modifier=Modifier.size(30.dp))
             }
         }
+        item {
+            RaghifCreamPanel(Modifier.fillMaxWidth()) {
+                Text(
+                    "مع رغيف .. إدارة أسهل لمخبز أكثر نجاحاً",
+                    modifier=Modifier.fillMaxWidth().padding(vertical=8.dp),
+                    textAlign=TextAlign.Center,
+                    fontSize=14.sp,
+                    fontWeight=FontWeight.Bold,
+                    color=RaghifPalette.TextBrown
+                )
+            }
+        }
+
     }
 }
 
