@@ -43,7 +43,7 @@ require("Icons.Default.Save" in s["actions"] and "Icons.Default.Print" in s["act
         "PDF controls need meaningful icons")
 require("24dp" not in s["icon"] or 'android:left="24dp"' not in s["icon"],
         "Artificial icon padding must not be restored")
-require('android:icon="@mipmap/ic_launcher"' in s["manifest"],"Use the adaptive Raghif icon")
+require('android:icon="@drawable/raghif_logo_icon"' in s["manifest"],"Launcher icon must equal About-screen image resource")
 require("DashboardTile(" in s["dashboard"],"Bakery dashboard must preserve live navigation")
 
 formula=root/"app/src/main/java/com/raghif/app/reports/ReportMath.kt"
@@ -51,7 +51,18 @@ sha=subprocess.run(["git","hash-object",str(formula)],capture_output=True,text=T
 require(sha.returncode==0 and sha.stdout.strip()=="e8011a4ca5d292f4a26c5e01f3aa10dc269ba2af",
         "ReportMath.kt changed: formulas must remain untouched")
 
+# Version 1.0.3 requirements
+require("RaghifExitDialog" in s["main"],"Use branded exit confirmation")
+require("RaghifNoticeDialog" in s["main"],"Use branded save notice")
+require("سجل مستقل جديد للتاريخ المختار" not in s["main"],"Remove temporary-new-record banner")
+require('RaghifSectionTitle("حفظ السجل")' not in s["main"],"Remove extra save title")
+require('ReportFileNames.daily' in s["main"],"Daily PDF must use Arabic filename")
+require("RaghifSectionTitle(\"نوع التقرير\")" in
+        (root/"app/src/main/java/com/raghif/app/ui/RaghifExportScreen.kt").read_text(),
+        "Use singular report type title")
+
 if issues:
     print("\n".join(issues),file=sys.stderr)
     sys.exit(1)
 print("Raghif November review checks passed; original financial formulas unchanged.")
+
