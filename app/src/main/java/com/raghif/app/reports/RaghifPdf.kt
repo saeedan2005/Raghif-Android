@@ -166,7 +166,7 @@ object RaghifPdf {
             }
             canvas.drawPath(footer,Paint(Paint.ANTI_ALIAS_FLAG).apply { color=gold })
             rect(LEFT, 770f, RIGHT, 772f, gold)
-            text("رغيف • إدارة البيانات اليومية للمخابز", LEFT, 779f, 415f, 10f, dark)
+            text("رغيف. إدارة البيانات اليومية للمخابز", LEFT, 779f, 365f, 10.5f, dark, leftAligned = true)
             text("صفحة " + number, 443f, 779f, 118f, 10f, dark, center = true)
         }
 
@@ -186,7 +186,7 @@ object RaghifPdf {
             rect(LEFT, y, RIGHT, y + h, if ((y.toInt() / h.toInt()) % 2 == 0) pale else Color.WHITE)
             line(LEFT, y + h, RIGHT, y + h, gold)
             text(label, 330f, y + 12f, 220f, 13f, dark, bold = true)
-            text(value, 48f, y + 12f, 261f, 13f, brown, center = true)
+            text(value, 48f, y + 10f, 261f, 15f, brown, center = true, bold = true)
             y += h
         }
 
@@ -199,7 +199,7 @@ object RaghifPdf {
             values.forEachIndexed { index, value ->
                 val width = widths[index]
                 val left = edge - width
-                text(value, left + 3f, y + if (header) 10f else 11f, width - 6f, if (header) 11f else 12f, if (header) Color.WHITE else dark, center = true, bold = header)
+                text(value, left + 3f, y + if (header) 10f else 11f, width - 6f, if (header) 12f else 14f, if (header) Color.WHITE else dark, center = true, bold = true)
                 line(left, y, left, y + h, gold)
                 edge = left
             }
@@ -207,14 +207,14 @@ object RaghifPdf {
             y += h
         }
 
-        fun text(value: String, x: Float, top: Float, width: Float, size: Float, color: Int, center: Boolean = false, bold: Boolean = false) {
+        fun text(value: String, x: Float, top: Float, width: Float, size: Float, color: Int, center: Boolean = false, bold: Boolean = false, leftAligned: Boolean = false) {
             val p = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                 textSize = size
                 this.color = color
                 typeface = Typeface.create("sans-serif", if (bold) Typeface.BOLD else Typeface.NORMAL)
             }
             val layout = StaticLayout.Builder.obtain(value, 0, value.length, p, width.toInt().coerceAtLeast(1))
-                .setAlignment(if (center) Layout.Alignment.ALIGN_CENTER else Layout.Alignment.ALIGN_NORMAL)
+                .setAlignment(if (center) Layout.Alignment.ALIGN_CENTER else if(leftAligned) Layout.Alignment.ALIGN_OPPOSITE else Layout.Alignment.ALIGN_NORMAL)
                 .setTextDirection(TextDirectionHeuristics.FIRSTSTRONG_RTL)
                 .setIncludePad(false)
                 .build()
