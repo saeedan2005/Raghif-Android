@@ -2,8 +2,8 @@
     <application
         android:allowBackup="false"
         android:label="رغيف"
-        android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher"
+        android:icon="@drawable/raghif_logo_icon"
+        android:roundIcon="@drawable/raghif_logo_icon"
         android:supportsRtl="true"
         android:theme="@style/Theme.Raghif">
         <activity
