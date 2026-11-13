@@ -15,17 +15,22 @@ class ReportFileNamesTest {
     }
     @Test fun financialUsesSelectedRange() {
         assertEquals(
-            "الايرادات_المالية_للفترة_من_2026-11-01_الى_2026-11-30",
-            ReportFileNames.financial("2026-11-01", "2026-11-30")
+            "تقرير_الايرادات_مخبز_الرحمة_للفترة_من_2026-11-01_الى_2026-11-30",
+            ReportFileNames.financial("مخبز الرحمة", "2026-11-01", "2026-11-30")
         )
     }
     @Test fun safeBakeryNamesCannotContainSlashes() {
         val name=ReportFileNames.daily("مخبز الخير / شمال", "2026-11-12")
         assertFalse(name.contains("/"))
     }
+    @Test fun financialNameSanitizesBakeryAndContainsItsName() {
+        val name = ReportFileNames.financial("مخبز الخير / شمال", "2026-11-01", "2026-11-02")
+        assertFalse(name.contains("/"))
+        assertEquals(true,name.contains("مخبز_الخير_شمال"))
+    }
     @Test fun reversedDatesAreInvalid() {
         assertThrows(IllegalArgumentException::class.java) {
-            ReportFileNames.financial("2026-12-01", "2026-11-01")
+            ReportFileNames.financial("مخبز الرحمة", "2026-12-01", "2026-11-01")
         }
     }
 }

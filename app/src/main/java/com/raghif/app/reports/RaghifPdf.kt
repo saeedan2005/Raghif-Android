@@ -53,13 +53,13 @@ object RaghifPdf {
         val document = PdfDocument()
         try {
             var number = 1
-            var sheet = page(document, context, number, "التقرير المالي", bakery, "الفترة من " + formatDate(from) + " إلى " + formatDate(to))
+            var sheet = page(document, context, number, "تقرير الإيرادات", bakery, "الفترة من " + formatDate(from) + " إلى " + formatDate(to))
             sheet.financialHeader()
             rows.forEach { record ->
                 if (sheet.y + 43f > 749f) {
                     sheet.finish()
                     number++
-                    sheet = page(document, context, number, "التقرير المالي", bakery, "تابع الفترة من " + formatDate(from) + " إلى " + formatDate(to))
+                    sheet = page(document, context, number, "تقرير الإيرادات", bakery, "تابع الفترة من " + formatDate(from) + " إلى " + formatDate(to))
                     sheet.financialHeader()
                 }
                 sheet.financialRow(record)
@@ -67,7 +67,7 @@ object RaghifPdf {
             if (sheet.y + 54f > 749f) {
                 sheet.finish()
                 number++
-                sheet = page(document, context, number, "التقرير المالي", bakery, "إجمالي الفترة")
+                sheet = page(document, context, number, "تقرير الإيرادات", bakery, "إجمالي الفترة")
                 sheet.financialHeader()
             }
             val revenue = rows.sumOf { it.revenue.toDouble() }

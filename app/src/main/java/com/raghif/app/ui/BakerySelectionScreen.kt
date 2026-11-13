@@ -106,15 +106,37 @@ fun BakerySelectionScreen(
             }
         }
         item {
-            RaghifCreamPanel(Modifier.fillMaxWidth()) {
+            // Branded closing banner with the original bakery identity.
+            val shape = RoundedCornerShape(22.dp)
+            Row(
+                modifier=Modifier.fillMaxWidth()
+                    .shadow(5.dp,shape)
+                    .background(Brush.horizontalGradient(listOf(RaghifPalette.DeepBrown,RaghifPalette.Brown,RaghifPalette.Orange)),shape)
+                    .border(1.5.dp,RaghifPalette.Golden,shape)
+                    .padding(horizontal=14.dp,vertical=16.dp),
+                verticalAlignment=Alignment.CenterVertically,
+                horizontalArrangement=Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    Modifier.size(49.dp)
+                        .background(RaghifPalette.LightGold,RoundedCornerShape(16.dp))
+                        .border(1.dp,RaghifPalette.Golden,RoundedCornerShape(16.dp)),
+                    contentAlignment=Alignment.Center
+                ) {
+                    Icon(Icons.Default.BakeryDining,contentDescription=null,
+                        modifier=Modifier.size(29.dp),tint=RaghifPalette.DeepBrown)
+                }
                 Text(
-                    "مع رغيف .. إدارة أسهل لمخبز أكثر نجاحاً",
-                    modifier=Modifier.fillMaxWidth().padding(vertical=8.dp),
+                    "مع رغيف.. إدارة أسهل لمخبز أكثر نجاحاً",
+                    modifier=Modifier.weight(1f),
                     textAlign=TextAlign.Center,
-                    fontSize=14.sp,
+                    fontSize=16.sp,
+                    lineHeight=23.sp,
                     fontWeight=FontWeight.Bold,
-                    color=RaghifPalette.TextBrown
+                    color=Color.White
                 )
+                Icon(Icons.Default.AutoAwesome,contentDescription=null,
+                    modifier=Modifier.size(22.dp),tint=RaghifPalette.LightGold)
             }
         }
 

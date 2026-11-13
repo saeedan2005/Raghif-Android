@@ -85,7 +85,7 @@ fun BackupActions(database: AppDatabase) {
             enabled = !busy,
             modifier = Modifier.fillMaxWidth()
         ) { Text("استعادة البيانات من نسخة احتياطية") }
-        Text("الاستعادة تستبدل بيانات هذا الجهاز بالكامل بعد تأكيدك. أنشئ نسخة احتياطية قبل الاستعادة.")
+        Text("الاستعادة تستبدل بيانات هذا التطبيق بالكامل بعد تأكيدك. أنشئ نسخة احتياطية قبل الاستعادة.")
     }
 
     if (pendingRestore != null) {

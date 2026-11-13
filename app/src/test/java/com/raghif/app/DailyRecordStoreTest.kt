@@ -66,6 +66,11 @@ class DailyRecordStoreTest {
         assertEquals(670L, result.revenue)
     }
 
+    @Test fun existingDailyRecordNeedsExplicitConfirmation() {
+        assertEquals(false,DailyRecordStore.needsConfirmation(null))
+        assertEquals(true,DailyRecordStore.needsConfirmation(record("2026-11-11",74L)))
+    }
+
     @Test fun cannotOverwriteAnotherBakeryOrDate() {
         val selected = record("2026-11-08", 0L)
         val wrongDate = record("2026-11-11", 74L)

@@ -4,6 +4,7 @@ import android.app.DatePickerDialog
 import android.content.Context
 import android.media.AudioManager
 import android.media.ToneGenerator
+import android.view.View
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -53,7 +54,11 @@ fun RaghifDateField(
                 }
                 dialog.datePicker.maxDate = end.timeInMillis
             }
+            // Saturday starts at the far right; Friday finishes the RTL week.
+            dialog.datePicker.firstDayOfWeek = Calendar.SATURDAY
             dialog.show()
+            dialog.window?.decorView?.layoutDirection = View.LAYOUT_DIRECTION_RTL
+            dialog.datePicker.layoutDirection = View.LAYOUT_DIRECTION_RTL
         },
         modifier = Modifier.fillMaxWidth()
     ) {

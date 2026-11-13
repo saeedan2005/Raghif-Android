@@ -34,9 +34,21 @@ object DailyRecordStore {
         )
     }
 
-    suspend fun save(database: AppDatabase, bakery: Bakery, entered: DailyRecord): DailyRecord =
-        database.withTransaction {
+    /** Existing records may only be replaced after explicit user confirmation. */
+    class ExistingRecordNeedsConfirmation : IllegalStateException("يوجد سجل سابق لهذا المخبز في هذا اليوم")
+
+    fun needsConfirmation(recordAtSelectedDate: DailyRecord?): Boolean = recordAtSelectedDate != null
+
+    suspend fun save(
+        database: AppDatabase,
+        bakery: Bakery,
+        entered: DailyRecord,
+        overwriteConfirmed: Boolean = false
+    ): DailyRecord = database.withTransaction {
             val matchingDate = database.dailyDao().byDate(bakery.id, entered.date)
+            if (needsConfirmation(matchingDate) && !overwriteConfirmed) {
+                throw ExistingRecordNeedsConfirmation()
+            }
             val target = forSelectedDate(bakery, entered, matchingDate)
             if (matchingDate == null) {
                 target.copy(id = database.dailyDao().insert(target))

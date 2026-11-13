@@ -19,10 +19,12 @@ object ReportFileNames {
         return "سجل_رغيف_اليومي_مخبز_" + safe(name) + "_" + date
     }
 
-    fun financial(startDate: String, endDate: String): String {
+    fun financial(bakeryName: String, startDate: String, endDate: String): String {
+        val name = bakeryName.trim().replace(Regex("^مخبز\\s+"), "")
+        require(name.isNotBlank()) { "اسم المخبز غير صالح" }
         val start = LocalDate.parse(startDate)
         val end = LocalDate.parse(endDate)
         require(!start.isAfter(end)) { "الفترة الزمنية غير صالحة" }
-        return "الايرادات_المالية_للفترة_من_" + start + "_الى_" + end
+        return "تقرير_الايرادات_مخبز_" + safe(name) + "_للفترة_من_" + start + "_الى_" + end
     }
 }

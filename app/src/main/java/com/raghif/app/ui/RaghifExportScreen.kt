@@ -69,11 +69,11 @@ fun RaghifExportScreen(database:AppDatabase,bakery:Bakery) {
         }
         RaghifSectionTitle("نوع التقرير")
         RaghifCreamPanel(Modifier.fillMaxWidth()) {
-            Column(verticalArrangement=Arrangement.spacedBy(9.dp)) {
-                ReportTypeOption("تقرير السجل اليومي",dailyReport) {
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                ReportTypeOption("تقرير السجل اليومي",dailyReport,Modifier.weight(1f)) {
                     tap();dailyReport=true;showPreview=false
                 }
-                ReportTypeOption("التقرير المالي",!dailyReport) {
+                ReportTypeOption("تقرير الإيرادات",!dailyReport,Modifier.weight(1f)) {
                     tap();dailyReport=false;showPreview=false
                 }
             }
@@ -114,8 +114,8 @@ fun RaghifExportScreen(database:AppDatabase,bakery:Bakery) {
         }
         ReportActions(
             fileName=if(dailyReport) ReportFileNames.daily(bakery.name,singleDay)
-                     else runCatching { ReportFileNames.financial(from,to) }
-                         .getOrDefault("الايرادات_المالية_للفترة"),
+                     else runCatching { ReportFileNames.financial(bakery.name,from,to) }
+                         .getOrDefault("تقرير_الايرادات_"+bakery.name),
             enabled=ready,
             createPdf={context->
                 if(dailyReport) {
@@ -130,30 +130,24 @@ fun RaghifExportScreen(database:AppDatabase,bakery:Bakery) {
 }
 
 @Composable
-private fun ReportTypeOption(label:String,selected:Boolean,onClick:()->Unit) {
-    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.Start) {
-        Row(
-            modifier=Modifier
-                .background(
-                    if(selected) RaghifPalette.Brown else RaghifPalette.Cream,
-                    RoundedCornerShape(18.dp)
-                )
-                .border(
-                    1.dp,
-                    if(selected) RaghifPalette.Golden else RaghifPalette.GoldBorder,
-                    RoundedCornerShape(18.dp)
-                )
-                .clickable(onClick=onClick)
-                .padding(horizontal=10.dp,vertical=2.dp),
-            verticalAlignment=Alignment.CenterVertically
-        ) {
-            RadioButton(selected=selected,onClick=onClick,
-                colors=androidx.compose.material3.RadioButtonDefaults.colors(
-                    selectedColor=RaghifPalette.LightGold,
-                    unselectedColor=RaghifPalette.Brown
-                ))
-            Text(label,fontWeight=FontWeight.Bold,fontSize=14.sp,
-                color=if(selected) Color.White else RaghifPalette.TextBrown)
-        }
+private fun ReportTypeOption(label:String,selected:Boolean,modifier:Modifier=Modifier,onClick:()->Unit) {
+    Row(
+        modifier=modifier
+            .heightIn(min=48.dp)
+            .background(if(selected) RaghifPalette.Brown else RaghifPalette.Cream,RoundedCornerShape(18.dp))
+            .border(1.dp,if(selected) RaghifPalette.Golden else RaghifPalette.GoldBorder,RoundedCornerShape(18.dp))
+            .clickable(onClick=onClick)
+            .padding(horizontal=3.dp,vertical=2.dp),
+        horizontalArrangement=Arrangement.Center,
+        verticalAlignment=Alignment.CenterVertically
+    ) {
+        RadioButton(selected=selected,onClick=onClick,modifier=Modifier.size(36.dp),
+            colors=androidx.compose.material3.RadioButtonDefaults.colors(
+                selectedColor=RaghifPalette.LightGold,
+                unselectedColor=RaghifPalette.Brown
+            ))
+        Text(label,fontWeight=FontWeight.Bold,fontSize=12.sp,lineHeight=14.sp,
+            maxLines=2,
+            color=if(selected) Color.White else RaghifPalette.TextBrown)
     }
 }
