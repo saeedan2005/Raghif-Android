@@ -303,6 +303,15 @@ class MainActivity : ComponentActivity() {
     var revenue by remember(initial,draftDate){mutableStateOf(initial?.revenue?.toString().orEmpty())}
     var history by remember { mutableStateOf<List<DailyRecord>>(emptyList()) }
     var showHistory by remember { mutableStateOf(false) }
+    var savedPdfRecord by remember(bakery.id) { mutableStateOf<DailyRecord?>(null) }
+    var pendingDateRecord by remember { mutableStateOf<DailyRecord?>(null) }
+    var pendingOverwrite by remember { mutableStateOf<DailyRecord?>(null) }
+    fun afterSuccessfulSave(saved: DailyRecord) {
+        savedPdfRecord = saved
+        date = today()
+        flour = ""; pieces = ""; meal = ""; waste = ""; credit = ""; revenue = ""; note = ""
+        onSaved(saved)
+    }
     val f=normalizedDigits(flour).toLongOrNull()?:0; val p=normalizedDigits(pieces).toLongOrNull()?:0; val m=normalizedDigits(meal).toLongOrNull()?:0; val w=normalizedDigits(waste).toLongOrNull()?:0; val c=normalizedDigits(credit).toLongOrNull()?:0; val rev=normalizedDigits(revenue).toLongOrNull()?:0
     val preview=DailyRecord(id=initial?.id?:0,bakeryId=bakery.id,date=date,flourKg=f,pieces=p,workersMeal=m,waste=w,creditSold=c,revenue=rev,note=note,unitRevenueUsed=initial?.unitRevenueUsed?:bakery.unitRevenue,piecesPerBagUsed=initial?.piecesPerBagUsed?:bakery.piecesPerBag,flourBagWeightUsed=initial?.flourBagWeightUsed?:bakery.flourBagWeight)
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
@@ -310,18 +319,15 @@ class MainActivity : ComponentActivity() {
         RaghifSectionTitle("يوم وتاريخ السجل")
         RaghifCreamPanel(Modifier.fillMaxWidth()) {
             Column(Modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(6.dp)) {
+                Text("اليوم: " + dayName(date),color=RaghifPalette.TextBrown,fontWeight=FontWeight.Bold)
                 RaghifDateField("التاريخ",date,{chosen ->
                     scope.launch {
                         val savedOnDate=db.dailyDao().byDate(bakery.id,chosen)
-                        if(savedOnDate!=null) onChoose(savedOnDate)
+                        savedPdfRecord=null
+                        if(savedOnDate!=null) pendingDateRecord=savedOnDate
                         else onNewForDate(chosen)
                     }
                 })
-                Text("اليوم: " + dayName(date),color=RaghifPalette.TextBrown,fontWeight=FontWeight.Bold)
-                if(initial!=null) {
-                    Text("السجل المحفوظ لهذا التاريخ — رقم " + initial.id,
-                        color=RaghifPalette.Brown,fontSize=12.sp)
-                }
             }
         }
         RaghifSectionTitle("بيانات الإنتاج")
@@ -365,26 +371,59 @@ class MainActivity : ComponentActivity() {
                         id = 0L, // Never copy the id of the record previously opened.
                         date = selectedDate, workersMeal = m, waste = w, creditSold = c
                     )
-                    runCatching {
-                        DailyRecordStore.save(db, bakery, entered)
-                    }.onSuccess { saved ->
-                        onSaved(saved)
-                    }.onFailure { error ->
-                        message("تعذر حفظ سجل هذا التاريخ: " + (error.localizedMessage ?: "خطأ غير معروف"))
+                    val existing = db.dailyDao().byDate(bakery.id, selectedDate)
+                    if (DailyRecordStore.needsConfirmation(existing)) {
+                        pendingOverwrite = entered
+                    } else {
+                        runCatching { DailyRecordStore.save(db, bakery, entered) }
+                            .onSuccess { saved -> afterSuccessfulSave(saved) }
+                            .onFailure { error ->
+                                if (error is DailyRecordStore.ExistingRecordNeedsConfirmation) {
+                                    pendingOverwrite = entered
+                                } else {
+                                    message("تعذر حفظ سجل هذا التاريخ: " + (error.localizedMessage ?: "خطأ غير معروف"))
+                                }
+                            }
                     }
                 }
             },modifier=Modifier.weight(1f).height(52.dp)){Icon(Icons.Default.Save,null); Text(" حفظ السجل")}
-            OutlinedButton(onClick={tap();onNew()},modifier=Modifier.weight(1f).height(52.dp)){Text("سجل جديد")}
+            OutlinedButton(onClick={tap();savedPdfRecord=null;date=today();flour="";pieces="";meal="";waste="";credit="";revenue="";note="";onNew()},modifier=Modifier.weight(1f).height(52.dp)){Text("سجل جديد")}
         }
         
         Text("تقرير PDF للسجل المحفوظ",
             fontWeight=FontWeight.Bold,color=brown)
+        val reportRecord = initial ?: savedPdfRecord
         ReportActions(
-            fileName=ReportFileNames.daily(bakery.name,initial?.date ?: date),
-            enabled=initial!=null,
+            fileName=ReportFileNames.daily(bakery.name,reportRecord?.date ?: date),
+            enabled=reportRecord!=null,
             createPdf={ ctx ->
-                RaghifPdf.daily(ctx,bakery,requireNotNull(initial))
+                RaghifPdf.daily(ctx,bakery,requireNotNull(reportRecord))
             }
+        )
+    }
+    pendingDateRecord?.let { existing ->
+        AlertDialog(
+            onDismissRequest={pendingDateRecord=null},
+            title={Text("سجل سابق")},
+            text={Text("يوجد سجل سابق لهذا المخبز في هذا اليوم. هل تريد تعديل بيانات السجل السابق؟")},
+            confirmButton={TextButton(onClick={tap();pendingDateRecord=null;onChoose(existing)}){Text("نعم")}},
+            dismissButton={TextButton(onClick={tap();pendingDateRecord=null}){Text("لا")}}
+        )
+    }
+    pendingOverwrite?.let { entered ->
+        AlertDialog(
+            onDismissRequest={pendingOverwrite=null},
+            title={Text("تأكيد تعديل سجل سابق")},
+            text={Text("يوجد سجل سابق لهذا المخبز في هذا اليوم. هل تريد تعديل بيانات السجل السابق؟")},
+            confirmButton={TextButton(onClick={
+                tap();pendingOverwrite=null
+                scope.launch {
+                    runCatching { DailyRecordStore.save(db,bakery,entered,overwriteConfirmed=true) }
+                        .onSuccess { saved -> afterSuccessfulSave(saved) }
+                        .onFailure { error -> message("تعذر تعديل السجل: " + (error.localizedMessage ?: "خطأ غير معروف")) }
+                }
+            }){Text("نعم")}},
+            dismissButton={TextButton(onClick={tap();pendingOverwrite=null}){Text("لا")}}
         )
     }
     if(showHistory) AlertDialog(onDismissRequest={showHistory=false},title={Text("السجلات السابقة")},text={Column(Modifier.heightIn(max=400.dp).verticalScroll(rememberScrollState())){history.forEach { r -> TextButton(onClick={showHistory=false;onChoose(r)}){Text("${prettyDate(r.date)} — الإيراد ${fmt(r.revenue)} ريال")} } }},confirmButton={TextButton(onClick={showHistory=false}){Text("إغلاق")}})
