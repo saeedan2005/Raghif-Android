@@ -207,7 +207,7 @@ class MainActivity : ComponentActivity() {
                     RaghifDashboard(db,b,onDaily={currentRecord=null;draftDate=today();navigate("daily")},onStats={navigate("stats")},onFinancial={navigate("financial")},onSearch={navigate("search")},onHistory={navigate("search")},onExport={navigate("export")})
                 }
                 "daily" -> selected?.let { b ->
-                    DailyScreen(db,b,currentRecord,draftDate,onChoose={record->currentRecord=record;draftDate=record?.date ?: today()},onNew={currentRecord=null;draftDate=today()},onNewForDate={chosen->currentRecord=null;draftDate=chosen},onSaved={record->currentRecord=record;draftDate=record.date;message="تم حفظ السجل اليومي.";},onStats={clickSound();navigate("stats")},onFinancial={clickSound();navigate("financial")},onSearch={clickSound();navigate("search")},message={message=it})
+                    DailyScreen(db,b,currentRecord,draftDate,onChoose={record->currentRecord=record;draftDate=record?.date ?: today()},onNew={currentRecord=null;draftDate=today()},onNewForDate={chosen->currentRecord=null;draftDate=chosen},onSaved={record->currentRecord=null;draftDate=today();message="تم حفظ السجل اليومي.";},onStats={clickSound();navigate("stats")},onFinancial={clickSound();navigate("financial")},onSearch={clickSound();navigate("search")},message={message=it})
                 }
                 "stats" -> selected?.let { StatsScreen(db,it) }
                 "financial" -> selected?.let { FinancialScreen(db,it) }
@@ -306,8 +306,8 @@ class MainActivity : ComponentActivity() {
     val f=normalizedDigits(flour).toLongOrNull()?:0; val p=normalizedDigits(pieces).toLongOrNull()?:0; val m=normalizedDigits(meal).toLongOrNull()?:0; val w=normalizedDigits(waste).toLongOrNull()?:0; val c=normalizedDigits(credit).toLongOrNull()?:0; val rev=normalizedDigits(revenue).toLongOrNull()?:0
     val preview=DailyRecord(id=initial?.id?:0,bakeryId=bakery.id,date=date,flourKg=f,pieces=p,workersMeal=m,waste=w,creditSold=c,revenue=rev,note=note,unitRevenueUsed=initial?.unitRevenueUsed?:bakery.unitRevenue,piecesPerBagUsed=initial?.piecesPerBagUsed?:bakery.piecesPerBag,flourBagWeightUsed=initial?.flourBagWeightUsed?:bakery.flourBagWeight)
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-        Text(bakery.name,Modifier.fillMaxWidth(),fontSize=23.sp,fontWeight=FontWeight.Bold,color=brown)
-        RaghifSectionTitle("بيانات السجل والتاريخ")
+        Text(bakery.name,Modifier.fillMaxWidth(),fontSize=23.sp,fontWeight=FontWeight.Bold,color=brown,textAlign=androidx.compose.ui.text.style.TextAlign.Center)
+        RaghifSectionTitle("يوم وتاريخ السجل")
         RaghifCreamPanel(Modifier.fillMaxWidth()) {
             Column(Modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(6.dp)) {
                 RaghifDateField("التاريخ",date,{chosen ->
@@ -341,8 +341,8 @@ class MainActivity : ComponentActivity() {
         RaghifCreamPanel(Modifier.fillMaxWidth()) {
             Column(verticalArrangement=Arrangement.spacedBy(5.dp)) {
                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-                    Box(Modifier.weight(1f)) { Field("المباع آجل (حبات)",credit,{credit=it},true) }
                     Box(Modifier.weight(1f)) { Field("الإيراد (ريال)",revenue,{revenue=it},true) }
+                    Box(Modifier.weight(1f)) { Field("المباع آجل (حبات)",credit,{credit=it},true) }
                 }
                 Field("الملاحظات",note,{note=it},singleLine=false)
             }
@@ -545,7 +545,7 @@ class MainActivity : ComponentActivity() {
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        RaghifSectionTitle("التقرير المالي — " + b.name)
+        RaghifSectionTitle("تقرير الإيرادات — " + b.name)
         // Internal accounting instruction; do not show in financial UI.
         RaghifDateField("من تاريخ",from,{from=it;rows=null})
         RaghifDateField("إلى تاريخ",to,{to=it;rows=null})
@@ -614,7 +614,7 @@ class MainActivity : ComponentActivity() {
             }
             // Export controls display their own icons; no redundant title bar.
             ReportActions(
-                fileName=runCatching { ReportFileNames.financial(normalizedDigits(from),normalizedDigits(to)) }.getOrDefault("الايرادات_المالية_للفترة"),
+                fileName=runCatching { ReportFileNames.financial(b.name,normalizedDigits(from),normalizedDigits(to)) }.getOrDefault("تقرير_الايرادات_"+b.name),
                 enabled=true,
                 createPdf={ context -> RaghifPdf.financial(context,b,list,normalizedDigits(from),normalizedDigits(to)) }
             )
