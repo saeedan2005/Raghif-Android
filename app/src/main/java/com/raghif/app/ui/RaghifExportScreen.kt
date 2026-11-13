@@ -17,6 +17,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.material3.ButtonDefaults
 import com.raghif.app.reports.ReportFileNames
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
