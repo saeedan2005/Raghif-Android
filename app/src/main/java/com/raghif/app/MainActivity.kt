@@ -901,7 +901,7 @@ class MainActivity : ComponentActivity() {
                 }
                 Column(horizontalAlignment=Alignment.CenterHorizontally) {
                     Text("إصدار التطبيق",fontSize=13.sp,color=RaghifPalette.TextBrown)
-                    Text("v1.0.4",fontWeight=FontWeight.Bold,color=RaghifPalette.Brown)
+                    Text("v1.0.6",fontWeight=FontWeight.Bold,color=RaghifPalette.Brown)
                 }
             }
         }
