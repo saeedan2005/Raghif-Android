@@ -810,6 +810,54 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+        RaghifSectionTitle("خيارات أخرى",sideAligned=true)
+        RaghifCreamPanel(Modifier.fillMaxWidth()) {
+            Column(Modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(9.dp)) {
+                Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
+                    Text("إظهار متوسط إنتاج الكيس في PDF اليومي",color=RaghifPalette.TextBrown,modifier=Modifier.weight(1f))
+                    Switch(showBagAverage,onCheckedChange={enabled ->
+                        showBagAverage=enabled
+                        RaghifPreferences.setShowBagAverage(context,enabled)
+                    })
+                }
+                HorizontalDivider(color=RaghifPalette.GoldBorder.copy(alpha=.35f))
+                Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
+                    Text("إظهار الفرق في الحبات في PDF اليومي",color=RaghifPalette.TextBrown,modifier=Modifier.weight(1f))
+                    Switch(showPiecesDifference,onCheckedChange={enabled ->
+                        showPiecesDifference=enabled
+                        RaghifPreferences.setShowPiecesDifference(context,enabled)
+                    })
+                }
+                HorizontalDivider(color=RaghifPalette.GoldBorder.copy(alpha=.35f))
+                OutlinedTextField(
+                    value=newCreditLabel,
+                    onValueChange={if(it.length<=50 && !it.contains('\n'))newCreditLabel=it},
+                    label={Text("مسمى المباع آجل في جميع الشاشات والتقارير")},
+                    singleLine=true,
+                    modifier=Modifier.fillMaxWidth()
+                )
+                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick={
+                            runCatching { RaghifPreferences.setCreditLabel(context,newCreditLabel) }
+                                .onSuccess {
+                                    onCreditLabelChange(RaghifPreferences.creditLabel(context))
+                                    information="تم اعتماد مسمى المبيعات في جميع الشاشات والتقارير."
+                                }.onFailure { information=it.localizedMessage ?: "المسمى غير صالح." }
+                        },
+                        modifier=Modifier.weight(1f)
+                    ){Text("اعتماد المسمى")}
+                    OutlinedButton(
+                        onClick={
+                            newCreditLabel=RaghifPreferences.DEFAULT_CREDIT_LABEL
+                            RaghifPreferences.setCreditLabel(context,newCreditLabel)
+                            onCreditLabelChange(newCreditLabel)
+                        },
+                        modifier=Modifier.weight(1f)
+                    ){Text("استعادة الافتراضي")}
+                }
+            }
+        }
         RaghifSectionTitle("الصورة الرئيسية للتطبيق",sideAligned=true)
         RaghifCreamPanel(Modifier.fillMaxWidth()) {
             Column(Modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(8.dp)) {
