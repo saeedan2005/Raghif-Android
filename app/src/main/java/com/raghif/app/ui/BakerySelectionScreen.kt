@@ -57,7 +57,7 @@ fun BakerySelectionScreen(
                 horizontalAlignment=Alignment.CenterHorizontally
             ) {
                 RaghifUncroppedImage(
-                    drawableId=R.drawable.raghif_original_header,
+                    drawableId=R.drawable.raghif_main_header,
                     description="رغيف، سنابل القمح والفرن",
                     modifier=Modifier.fillMaxWidth()
                 )
