@@ -246,9 +246,37 @@ class MainActivity : ComponentActivity() {
         )
     }
     if(confirmExit) RaghifExitDialog(
-        onDismiss={confirmExit=false},
-        onConfirm={confirmExit=false;(context as? android.app.Activity)?.finish()}
+        onDismiss={if(!exitBusy)confirmExit=false},
+        onConfirm={
+            if (!exitBusy) {
+                confirmExit = false
+                if (RaghifPreferences.autoBackupOnExit(context)) {
+                    exitBusy = true
+                    scope.launch {
+                        runCatching { RaghifAutoBackup.saveOnExit(context, db) }
+                            .onSuccess { finishRaghifTask() }
+                            .onFailure { exitBackupError = it.localizedMessage ?: "تعذر حفظ النسخة الاحتياطية." }
+                        exitBusy = false
+                    }
+                } else finishRaghifTask()
+            }
+        }
     )
+    if (exitBusy) AlertDialog(
+        onDismissRequest={},
+        title={Text("النسخ الاحتياطي التلقائي")},
+        text={Text("جارٍ حفظ نسخة من بيانات رغيف قبل الخروج...")},
+        confirmButton={CircularProgressIndicator(modifier=Modifier.size(28.dp))}
+    )
+    exitBackupError?.let { failure ->
+        AlertDialog(
+            onDismissRequest={exitBackupError=null},
+            title={Text("تعذّر حفظ النسخة الاحتياطية")},
+            text={Text(failure + "\nلم يُغلق التطبيق لحماية بياناتك. يمكنك إعادة المحاولة أو الخروج دون نسخة جديدة.")},
+            confirmButton={TextButton(onClick={exitBackupError=null;confirmExit=true}){Text("إعادة المحاولة")}},
+            dismissButton={TextButton(onClick={exitBackupError=null;finishRaghifTask()}){Text("الخروج دون نسخة")}}
+        )
+    }
     }
     message?.let { RaghifNoticeDialog(it,onDismiss={message=null}) }
 }
