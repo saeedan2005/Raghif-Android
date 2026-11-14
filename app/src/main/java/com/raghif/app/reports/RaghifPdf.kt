@@ -18,6 +18,7 @@ import android.text.TextDirectionHeuristics
 import android.text.TextPaint
 import com.raghif.app.data.Bakery
 import com.raghif.app.data.DailyRecord
+import com.raghif.app.data.RaghifPreferences
 import com.raghif.app.ui.ImageFit
 import java.io.ByteArrayOutputStream
 import java.text.NumberFormat
@@ -89,12 +90,16 @@ object RaghifPdf {
             sheet.labelRow("عدد الحبات المنتجة", amount(record.pieces) + " حبة")
             sheet.labelRow("عشاء العمال", amount(record.workersMeal) + " حبة")
             sheet.labelRow("التالف", amount(record.waste) + " حبة")
-            sheet.labelRow("المباع آجل", amount(record.creditSold) + " حبة")
+            sheet.labelRow(RaghifPreferences.creditLabel(context), amount(record.creditSold) + " حبة")
             sheet.labelRow("الإيراد النقدي", amount(record.revenue) + " ريال")
-            sheet.labelRow("قيمة المباع آجل", amount(ReportMath.deferredValue(record)) + " ريال")
+            sheet.labelRow("قيمة " + RaghifPreferences.creditLabel(context), amount(ReportMath.deferredValue(record)) + " ريال")
             sheet.labelRow("إجمالي المبيعات", amount(ReportMath.totalValue(record)) + " ريال")
-            sheet.labelRow("الفرق في الحبات", amount(ReportMath.productionDifference(record)) + " حبة")
-            sheet.labelRow("متوسط إنتاج الكيس", ReportMath.averagePiecesPerFlourBag(record)?.let { amount(it) + " حبة" } ?: "غير متاح")
+            if (RaghifPreferences.showPiecesDifference(context)) {
+                sheet.labelRow("الفرق في الحبات", amount(ReportMath.productionDifference(record)) + " حبة")
+            }
+            if (RaghifPreferences.showBagAverage(context)) {
+                sheet.labelRow("متوسط إنتاج الكيس", ReportMath.averagePiecesPerFlourBag(record)?.let { amount(it) + " حبة" } ?: "غير متاح")
+            }
             if (record.note.isNotBlank()) {
                 sheet.y += 10f
                 sheet.text("ملاحظات: " + record.note, LEFT + 8f, sheet.y, PAGE_WIDTH - 2f * LEFT - 16f, 12f, dark)
@@ -172,7 +177,7 @@ object RaghifPdf {
         }
 
         fun financialHeader() {
-            tableRow(listOf("التاريخ", "الإيراد (ريال)", "المباع آجل (ريال)", "الإجمالي (ريال)"), true)
+            tableRow(listOf("التاريخ", "الإيراد (ريال)", RaghifPreferences.creditLabel(context) + " (ريال)", "الإجمالي (ريال)"), true)
         }
 
         fun financialRow(r: DailyRecord) {
