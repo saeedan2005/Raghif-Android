@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
         android:allowBackup="false"
-        android:label="رغيف"
+        android:label="${appLabel}"
         android:icon="@drawable/raghif_logo_icon"
         android:roundIcon="@drawable/raghif_logo_icon"
         android:supportsRtl="true"
