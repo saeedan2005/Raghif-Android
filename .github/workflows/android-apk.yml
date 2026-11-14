@@ -70,7 +70,7 @@ jobs:
 
       - name: Archive exact source snapshot
         run: |
-          git archive --format=zip --output="$RUNNER_TEMP/Raghif-Source-v1.0.6.zip" HEAD
+          git archive --format=zip --output="$RUNNER_TEMP/Raghif-Source-v1.0.7.zip" HEAD
           unzip -t "$RUNNER_TEMP/Raghif-Source-v1.0.6.zip" | tail -1
 
       - name: Upload source snapshot
