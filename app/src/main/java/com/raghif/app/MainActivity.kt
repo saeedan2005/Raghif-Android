@@ -715,6 +715,28 @@ class MainActivity : ComponentActivity() {
     var confirmClear by remember { mutableStateOf(false) }
     var information by remember { mutableStateOf<String?>(null) }
     val context=LocalContext.current
+    var showBagAverage by remember { mutableStateOf(RaghifPreferences.showBagAverage(context)) }
+    var showPiecesDifference by remember { mutableStateOf(RaghifPreferences.showPiecesDifference(context)) }
+    var newCreditLabel by remember { mutableStateOf(RaghifPreferences.creditLabel(context)) }
+    var autoBackup by remember { mutableStateOf(RaghifPreferences.autoBackupOnExit(context)) }
+    var backupFolder by remember { mutableStateOf(RaghifPreferences.backupFolder(context)) }
+    val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) {
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(
+                    uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+                RaghifPreferences.setBackupFolder(context, uri.toString())
+                RaghifPreferences.setAutoBackupOnExit(context, true)
+            }.onSuccess {
+                backupFolder = uri.toString()
+                autoBackup = true
+                information = "تم اعتماد مجلد النسخ الاحتياطي التلقائي."
+            }.onFailure {
+                information = "لم يتم منح إذن حفظ النسخ الاحتياطية: " + (it.localizedMessage ?: "خطأ غير معروف")
+            }
+        }
+    }
     val imagePicker=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if(uri != null) scope.launch {
             runCatching {
