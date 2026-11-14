@@ -34,6 +34,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.room.withTransaction
 import com.raghif.app.data.*
+import androidx.compose.runtime.compositionLocalOf
 import com.raghif.app.reports.RaghifPdf
 import com.raghif.app.reports.ReportActions
 import com.raghif.app.reports.ReportMath
@@ -62,6 +63,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
+private val LocalRaghifCreditLabel = compositionLocalOf { RaghifPreferences.DEFAULT_CREDIT_LABEL }
 private val brown = Color(0xFF8B3906)
 private val cream = Color(0xFFFFF6E8)
 private val ar = Locale("ar")
@@ -119,6 +121,12 @@ class MainActivity : ComponentActivity() {
     var page by remember { mutableStateOf("bakeries") }
     val navigationHistory = remember { mutableStateListOf<String>() }
     var confirmExit by remember { mutableStateOf(false) }
+    var exitBusy by remember { mutableStateOf(false) }
+    var exitBackupError by remember { mutableStateOf<String?>(null) }
+    var creditLabel by remember { mutableStateOf(RaghifPreferences.creditLabel(context)) }
+    fun finishRaghifTask() {
+        (context as? android.app.Activity)?.finishAndRemoveTask()
+    }
     fun navigate(target: String) {
         if (target != page) { navigationHistory.add(page); page = target }
     }
@@ -144,7 +152,7 @@ class MainActivity : ComponentActivity() {
     var draftDate by remember { mutableStateOf(today()) }
     var reportRows by remember { mutableStateOf<List<DailyRecord>>(emptyList()) }
 
-    CompositionLocalProvider(LocalRaghifSound provides clickSound) {
+    CompositionLocalProvider(LocalRaghifSound provides clickSound, LocalRaghifCreditLabel provides creditLabel) {
     Scaffold(
         containerColor = if(night) Color.Black else RaghifPalette.Paper,
         bottomBar = {
@@ -213,7 +221,7 @@ class MainActivity : ComponentActivity() {
                 "financial" -> selected?.let { FinancialScreen(db,it) }
                 "export" -> selected?.let { RaghifExportScreen(db,it) }
                 "search" -> selected?.let { b -> SearchScreen(db,b,onOpen={record -> currentRecord=record;draftDate=record.date;navigate("daily")}) }
-                "settings" -> SettingsScreen(db,night,onNightChange,soundEnabled,{ soundEnabled=it; soundSettings.edit().putBoolean("sound",it).apply();if(it)playRaghifClick(clickContext) })
+                "settings" -> SettingsScreen(db,night,onNightChange,soundEnabled,{ soundEnabled=it; soundSettings.edit().putBoolean("sound",it).apply();if(it)playRaghifClick(clickContext) },onCreditLabelChange={creditLabel=it})
             }
             }
         }
@@ -348,7 +356,7 @@ class MainActivity : ComponentActivity() {
             Column(verticalArrangement=Arrangement.spacedBy(5.dp)) {
                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
                     Box(Modifier.weight(1f)) { Field("الإيراد (ريال)",revenue,{revenue=it},true) }
-                    Box(Modifier.weight(1f)) { Field("المباع آجل (حبات)",credit,{credit=it},true) }
+                    Box(Modifier.weight(1f)) { Field(LocalRaghifCreditLabel.current + " (حبات)",credit,{credit=it},true) }
                 }
                 Field("الملاحظات",note,{note=it},singleLine=false)
             }
@@ -494,7 +502,7 @@ class MainActivity : ComponentActivity() {
             Stat("عدد أكياس الدقيق",fmt(list.sumOf{if(it.flourBagWeightUsed>0)it.flourKg/it.flourBagWeightUsed else 0.0}))
             Stat("إجمالي عشاء العمال",fmt(list.sumOf{it.workersMeal}))
             Stat("إجمالي التالف",fmt(list.sumOf{it.waste}))
-            Stat("إجمالي المباع آجل",fmt(list.sumOf{it.creditSold}))
+            Stat("إجمالي " + LocalRaghifCreditLabel.current,fmt(list.sumOf{it.creditSold}))
             Stat("إجمالي المباع نقدًا",fmt(list.sumOf{cashSold(it)}))
             Stat("مجموع الفرق",fmt(list.sumOf{difference(it)}))
             Stat("متوسط إنتاج الكيس",ReportMath.averagePiecesPerBag(list)?.let { fmt(it)+" حبة/كيس" } ?: "غير متاح")
@@ -610,7 +618,7 @@ class MainActivity : ComponentActivity() {
             val totalCredit = list.sumOf { ReportMath.deferredValue(it) }
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(7.dp)) {
                 RaghifMetricCard("إجمالي الإيرادات",fmt(totalRevenue),"ريال",Icons.Default.Paid,Modifier.weight(1f))
-                RaghifMetricCard("المبيعات الآجلة",fmt(totalCredit),"ريال",Icons.Default.Payments,Modifier.weight(1f))
+                RaghifMetricCard(LocalRaghifCreditLabel.current,fmt(totalCredit),"ريال",Icons.Default.Payments,Modifier.weight(1f))
             }
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(7.dp)) {
                 RaghifMetricCard("إجمالي المبيعات",fmt(totalRevenue+totalCredit),"ريال",Icons.Default.AccountBalanceWallet,Modifier.weight(1f))
@@ -632,7 +640,7 @@ class MainActivity : ComponentActivity() {
             RaghifCreamPanel(Modifier.fillMaxWidth()) {
                 Column(verticalArrangement=Arrangement.spacedBy(6.dp)) {
                     Text("الإيراد النقدي: " + fmt(totalRevenue) + " ريال",color=RaghifPalette.TextBrown)
-                    Text("قيمة المبيعات الآجلة: " + fmt(totalCredit) + " ريال",color=RaghifPalette.TextBrown)
+                    Text("قيمة " + LocalRaghifCreditLabel.current + ": " + fmt(totalCredit) + " ريال",color=RaghifPalette.TextBrown)
                     Text("إجمالي المبيعات: " + fmt(totalRevenue+totalCredit) + " ريال",
                         fontWeight=FontWeight.Bold,color=RaghifPalette.Brown)
                 }
@@ -646,7 +654,7 @@ class MainActivity : ComponentActivity() {
                     Column(verticalArrangement=Arrangement.spacedBy(3.dp)) {
                         Text(prettyDate(record.date),fontWeight=FontWeight.Bold,color=RaghifPalette.TextBrown)
                         Text("الإيراد: " + fmt(record.revenue) + " ريال",color=RaghifPalette.TextBrown)
-                        Text("المباع آجل: " + fmt(ReportMath.deferredValue(record)) + " ريال",color=RaghifPalette.TextBrown)
+                        Text(LocalRaghifCreditLabel.current + ": " + fmt(ReportMath.deferredValue(record)) + " ريال",color=RaghifPalette.TextBrown)
                         Text("الإجمالي: " + fmt(ReportMath.totalValue(record)) + " ريال",color=RaghifPalette.Brown)
                     }
                 }
@@ -671,7 +679,8 @@ class MainActivity : ComponentActivity() {
     night:Boolean,
     onNightChange:(Boolean)->Unit,
     sound:Boolean,
-    onSoundChange:(Boolean)->Unit
+    onSoundChange:(Boolean)->Unit,
+    onCreditLabelChange:(String)->Unit
 ) {
     val scope=rememberCoroutineScope()
     val tap=LocalRaghifSound.current
