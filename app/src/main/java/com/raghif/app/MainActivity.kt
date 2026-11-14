@@ -777,6 +777,28 @@ class MainActivity : ComponentActivity() {
         RaghifCreamPanel {
             Column(Modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(6.dp)) {
                 BackupActions(db)
+                HorizontalDivider(color=RaghifPalette.GoldBorder.copy(alpha=.35f))
+                Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
+                    Text("نسخة احتياطية تلقائية عند الخروج",fontWeight=FontWeight.Bold,color=RaghifPalette.TextBrown,modifier=Modifier.weight(1f))
+                    Switch(checked=autoBackup,onCheckedChange={enabled ->
+                        if (enabled) {
+                            val allowed=backupFolder?.let { saved ->
+                                context.contentResolver.persistedUriPermissions.any { p ->
+                                    p.uri.toString()==saved && p.isWritePermission
+                                }
+                            } == true
+                            if (allowed) {
+                                RaghifPreferences.setAutoBackupOnExit(context,true)
+                                autoBackup=true
+                            } else folderPicker.launch(null)
+                        } else {
+                            RaghifPreferences.setAutoBackupOnExit(context,false)
+                            autoBackup=false
+                        }
+                    })
+                }
+                Text(if(backupFolder==null) "اختر مجلدًا على الهاتف لتخزين نسخ JSON تلقائيًا." else "تم اختيار مجلد النسخ الاحتياطي. يمكنك تغييره متى أردت.",color=RaghifPalette.TextBrown,fontSize=12.sp)
+                OutlinedButton(onClick={tap();folderPicker.launch(null)},modifier=Modifier.fillMaxWidth()) { Text("اختيار أو تغيير مجلد النسخ الاحتياطي") }
                 OutlinedButton(
                     onClick={tap();confirmClear=true},
                     border=BorderStroke(1.5.dp,RaghifPalette.Danger),
