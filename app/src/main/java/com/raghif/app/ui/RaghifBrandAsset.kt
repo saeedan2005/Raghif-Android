@@ -9,8 +9,8 @@ import androidx.compose.runtime.setValue
 import java.io.File
 
 /**
- * An optional full-resolution image can replace the compressed sample
- * banner bundled in the APK without ever cropping or stretching it.
+ * The bundled high-resolution default header can be overridden by an image
+ * explicitly imported by the user, without cropping or stretching it.
  *
  * Existing bakery records, prices, and financial calculations are untouched.
  */
