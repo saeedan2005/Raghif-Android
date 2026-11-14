@@ -59,13 +59,13 @@ jobs:
       - name: Run unit tests
         run: gradle testDebugUnitTest --stacktrace
 
-      - name: Build preview APK
+      - name: Build APK (original Raghif app identity)
         run: gradle assembleDebug --stacktrace
 
-      - name: Upload preview APK
+      - name: Upload Raghif APK
         uses: actions/upload-artifact@v4
         with:
-          name: Raghif-Preview-APK
+          name: Raghif-APK-v1.0.7
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
@@ -97,7 +97,7 @@ jobs:
 
       - name: Explain missing production signing credentials
         if: env.RAGHIF_RELEASE_SIGNING_CONFIGURED != 'true'
-        run: echo "::notice::Official release APK was not built. Configure the four RAGHIF signing secrets to create a production-signed APK. The preview APK and tests were still built successfully."
+        run: echo "::notice::A separately production-signed release APK was not built because no production keystore is configured. The APK artifact above uses the same debug-build variant as the prior GitHub builds, with the normal Raghif app name and package ID."
 
       - name: Archive exact source snapshot
         run: |
