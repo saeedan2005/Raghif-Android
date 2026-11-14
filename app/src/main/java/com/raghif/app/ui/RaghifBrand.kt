@@ -110,7 +110,7 @@ fun RaghifUncroppedImage(
 fun RaghifHeader(title: String, subtitle: String = "إدارة البيانات اليومية للمخابز") {
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         RaghifUncroppedImage(
-            drawableId = R.drawable.raghif_original_header,
+            drawableId = R.drawable.raghif_main_header,
             description = "الشعار مع سنابل القمح والخبز والفرن"
         )
         RaghifSectionTitle(title, sideAligned = false)
