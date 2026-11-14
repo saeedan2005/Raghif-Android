@@ -42,10 +42,9 @@ android {
 
     buildTypes {
         getByName("debug") {
-            // Keep a separate preview installation for safe device testing.
-            applicationIdSuffix = ".preview"
-            versionNameSuffix = "-preview"
-            manifestPlaceholders["appLabel"] = "رغيف تجريبي"
+            // Match the original Raghif package and launcher name used by prior builds.
+            // No preview suffix: applicationId remains com.raghif.app.
+            manifestPlaceholders["appLabel"] = "رغيف"
         }
         getByName("release") {
             // The official package has no preview suffix and uses the production key.
