@@ -1,8 +1,13 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#FFF1DF" android:pathData="M0,0h108v108h-108z"/>
-    <path android:fillColor="#A65B35" android:pathData="M20,57 C20,37 34,24 54,24 C74,24 88,37 88,57 L88,70 C88,77 82,83 75,83 L33,83 C26,83 20,77 20,70 Z"/>
-    <path android:fillColor="#F7C77A" android:pathData="M28,57 C28,42 39,32 54,32 C69,32 80,42 80,57 L80,67 C80,72 76,76 71,76 L37,76 C32,76 28,72 28,67 Z"/>
-    <path android:fillColor="#A65B35" android:pathData="M43,40 L47,40 L42,55 L38,55 Z M57,37 L61,38 L57,54 L53,53 Z M69,43 L73,45 L68,58 L64,56 Z"/>
+    <path android:fillColor="#FFF2D8" android:pathData="M0,0h108v108h-108z"/>
+    <path android:fillColor="#6E2D04" android:pathData="M0,80 Q54,65 108,80 L108,108 H0 Z"/>
+    <path android:fillColor="#FFB629" android:pathData="M0,84 Q54,69 108,84 L108,90 Q54,75 0,90 Z"/>
+    <path android:fillColor="#8B3906" android:pathData="M27,56 C27,39 41,25 60,25 C77,25 90,39 90,56 L90,69 C90,78 83,83 75,83 L41,83 C33,83 27,77 27,69 Z"/>
+    <path android:fillColor="#F9AB20" android:pathData="M32,55 C32,41 43,31 60,31 C76,31 84,42 84,55 L84,68 C84,74 79,78 73,78 L43,78 C36,78 32,73 32,67 Z"/>
+    <path android:fillColor="#FFF0B0" android:pathData="M44,36 L49,35 L42,54 L37,55 Z M59,33 L64,34 L58,54 L53,53 Z M74,39 L78,42 L70,58 L66,55 Z"/>
+    <path android:fillColor="#7F3909" android:strokeColor="#7F3909" android:strokeWidth="1.8" android:fillAlpha="0" android:pathData="M19,75 Q15,49 11,19"/>
+    <path android:fillColor="#F7AC24" android:pathData="M12,22 Q1,19 5,10 Q13,11 12,22 Z M13,30 Q2,29 4,20 Q13,20 13,30 Z M15,39 Q5,38 6,29 Q16,29 15,39 Z M17,48 Q7,48 8,39 Q18,40 17,48 Z M19,57 Q10,57 11,48 Q20,49 19,57 Z M20,66 Q12,67 13,57 Q21,58 20,66 Z"/>
+    <path android:fillColor="#E58A09" android:pathData="M12,21 Q19,11 22,14 Q22,22 13,26 Z M13,30 Q23,20 26,23 Q25,31 14,35 Z M15,40 Q25,31 28,34 Q27,41 16,45 Z M18,50 Q27,42 30,45 Q28,52 19,55 Z M19,60 Q28,53 32,55 Q31,63 20,64 Z"/>
 </vector>

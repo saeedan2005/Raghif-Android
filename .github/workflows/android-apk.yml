@@ -3,6 +3,8 @@ name: Build Raghif Android APK
 on:
   push:
     branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
   workflow_dispatch:
 
 permissions:
@@ -15,6 +17,7 @@ jobs:
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+      RAGHIF_RELEASE_SIGNING_CONFIGURED: ${{ secrets.RAGHIF_KEYSTORE_BASE64 != '' && secrets.RAGHIF_KEYSTORE_PASSWORD != '' && secrets.RAGHIF_KEY_ALIAS != '' && secrets.RAGHIF_KEY_PASSWORD != '' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -42,19 +45,68 @@ jobs:
 
       - name: Install Gradle 8.9
         run: |
-          curl -fsSL https://services.gradle.org/distributions/gradle-8.9-bin.zip -o /tmp/gradle.zip
+          curl -fL --retry 5 --retry-all-errors --retry-delay 5 --connect-timeout 20 \
+            https://services.gradle.org/distributions/gradle-8.9-bin.zip -o /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d /opt
           echo "/opt/gradle-8.9/bin" >> "$GITHUB_PATH"
+
+      - name: Verify original image aspect-ratio safeguards
+        run: python3 scripts/validate_image_usage.py
+
+      - name: Verify review notes and unchanged accounting formulas
+        run: python3 scripts/validate_review_requirements.py
 
       - name: Run unit tests
         run: gradle testDebugUnitTest --stacktrace
 
-      - name: Build debug APK
+      - name: Build APK (original Raghif app identity)
         run: gradle assembleDebug --stacktrace
 
-      - name: Upload debug APK
+      - name: Upload Raghif APK
         uses: actions/upload-artifact@v4
         with:
-          name: Raghif-Debug-APK
+          name: Raghif-APK-v1.0.7
           path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Prepare official release signing key
+        if: env.RAGHIF_RELEASE_SIGNING_CONFIGURED == 'true'
+        env:
+          RAGHIF_KEYSTORE_BASE64: ${{ secrets.RAGHIF_KEYSTORE_BASE64 }}
+        run: |
+          printf '%s' "$RAGHIF_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/raghif-release.jks"
+          test -s "$RUNNER_TEMP/raghif-release.jks"
+          chmod 600 "$RUNNER_TEMP/raghif-release.jks"
+
+      - name: Build official release APK
+        if: env.RAGHIF_RELEASE_SIGNING_CONFIGURED == 'true'
+        env:
+          RAGHIF_KEYSTORE_FILE: ${{ runner.temp }}/raghif-release.jks
+          RAGHIF_KEYSTORE_PASSWORD: ${{ secrets.RAGHIF_KEYSTORE_PASSWORD }}
+          RAGHIF_KEY_ALIAS: ${{ secrets.RAGHIF_KEY_ALIAS }}
+          RAGHIF_KEY_PASSWORD: ${{ secrets.RAGHIF_KEY_PASSWORD }}
+        run: gradle assembleRelease --stacktrace
+
+      - name: Upload official release APK
+        if: env.RAGHIF_RELEASE_SIGNING_CONFIGURED == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Raghif-Official-APK-v1.0.7
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+
+      - name: Explain missing production signing credentials
+        if: env.RAGHIF_RELEASE_SIGNING_CONFIGURED != 'true'
+        run: echo "::notice::A separately production-signed release APK was not built because no production keystore is configured. The APK artifact above uses the same debug-build variant as the prior GitHub builds, with the normal Raghif app name and package ID."
+
+      - name: Archive exact source snapshot
+        run: |
+          git archive --format=zip --output="$RUNNER_TEMP/Raghif-Source-v1.0.7.zip" HEAD
+          unzip -t "$RUNNER_TEMP/Raghif-Source-v1.0.7.zip" | tail -1
+
+      - name: Upload source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: Raghif-Source-v1.0.7
+          path: ${{ runner.temp }}/Raghif-Source-v1.0.7.zip
           if-no-files-found: error

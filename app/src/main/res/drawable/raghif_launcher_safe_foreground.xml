@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The previous 24dp insets introduced an artificial cream frame.
+         The original square icon now fills the launcher foreground.
+         Source art is square, so bitmap fill does not distort its ratio.
+         Android may still apply its standard adaptive-icon mask. -->
+    <item>
+        <bitmap
+            android:src="@drawable/raghif_logo_icon"
+            android:gravity="fill" />
+    </item>
+</layer-list>
