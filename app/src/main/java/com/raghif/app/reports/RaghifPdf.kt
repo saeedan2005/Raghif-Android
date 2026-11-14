@@ -140,7 +140,7 @@ object RaghifPdf {
             // The logo artwork is contained within this area, never cropped or stretched.
             // Empty side margins are deliberate if another original image has a different ratio.
             val bitmap = com.raghif.app.ui.RaghifBrandAsset.decode(context)
-                ?: BitmapFactory.decodeResource(context.resources, R.drawable.raghif_original_header)
+                ?: BitmapFactory.decodeResource(context.resources, R.drawable.raghif_main_header)
             if (bitmap != null) {
                 val destination = ImageFit.contain(
                     bitmap.width.toFloat(), bitmap.height.toFloat(), PAGE_WIDTH.toFloat(), 112f
