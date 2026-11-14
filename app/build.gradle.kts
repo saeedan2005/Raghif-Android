@@ -14,6 +14,16 @@ android {
         versionCode = 7
         versionName = "1.0.6"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders["appLabel"] = "رغيف"
+    }
+    buildTypes {
+        getByName("debug") {
+            // Side-by-side preview: GitHub ephemeral debug signing keys cannot update
+            // a previously installed production/test APK without matching signatures.
+            applicationIdSuffix = ".preview"
+            versionNameSuffix = "-preview"
+            manifestPlaceholders["appLabel"] = "رغيف تجريبي"
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
